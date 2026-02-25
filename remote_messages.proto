@@ -151,13 +151,22 @@ message Time {
   int32 timezone_offset = 2;
 }
 
+// Device state for sync responses
+message DeviceState {
+  string device_id = 1;
+  bool is_on = 2;
+  int32 volume_level = 3;
+  bool is_muted = 4;
+  Metadata playback = 5;
+}
+
 // State synchronization response
 message StateSync {
-  // Optional metadata (NanoPB will generate has_metadata automatically)
-  Metadata metadata = 1;
-  
   // Optional time data (NanoPB will generate has_time automatically)
-  Time time = 2;
+  Time time = 1;
+
+  // Per-device state snapshots
+  repeated DeviceState devices = 2;
 }
 
 // Pairing status response
