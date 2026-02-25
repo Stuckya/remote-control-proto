@@ -1,0 +1,60 @@
+name: Generate Protobuf Code
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install protoc
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y protobuf-compiler
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Python protobuf tools
+        run: pip install grpcio-tools mypy-protobuf
+
+      - name: Generate Python code
+        run: |
+          mkdir -p generated/python
+          protoc \
+            --proto_path=. \
+            --python_out=generated/python \
+            --mypy_out=generated/python \
+            remote_messages.proto
+
+      - name: Install nanopb
+        run: pip install nanopb
+
+      - name: Generate C++ (nanopb) code
+        run: |
+          mkdir -p generated/cpp
+          NANOPB_DIR=$(python -c "import nanopb; import os; print(os.path.dirname(nanopb.__file__))")
+          protoc \
+            --proto_path=. \
+            --plugin=protoc-gen-nanopb="${NANOPB_DIR}/generator/protoc-gen-nanopb" \
+            --nanopb_out=generated/cpp \
+            remote_messages.proto
+
+      - name: Commit generated code
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add generated/
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "chore: regenerates protobuf code from schema."
+            git push
+          fi
