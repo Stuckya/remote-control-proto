@@ -30,7 +30,10 @@ PB_BIND(omote_Metadata, omote_Metadata, AUTO)
 PB_BIND(omote_Time, omote_Time, AUTO)
 
 
-PB_BIND(omote_StateSync, omote_StateSync, AUTO)
+PB_BIND(omote_DeviceState, omote_DeviceState, 2)
+
+
+PB_BIND(omote_StateSync, omote_StateSync, 2)
 
 
 PB_BIND(omote_PairingStatus, omote_PairingStatus, 2)

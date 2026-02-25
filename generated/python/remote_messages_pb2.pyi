@@ -3,8 +3,10 @@
 isort:skip_file
 """
 
+from collections import abc as _abc
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
+from google.protobuf.internal import containers as _containers
 from google.protobuf.internal import enum_type_wrapper as _enum_type_wrapper
 import builtins as _builtins
 import sys
@@ -358,30 +360,63 @@ class Time(_message.Message):
 Global___Time: _TypeAlias = Time  # noqa: Y015
 
 @_typing.final
+class DeviceState(_message.Message):
+    """Device state for sync responses"""
+
+    DESCRIPTOR: _descriptor.Descriptor
+
+    DEVICE_ID_FIELD_NUMBER: _builtins.int
+    IS_ON_FIELD_NUMBER: _builtins.int
+    VOLUME_LEVEL_FIELD_NUMBER: _builtins.int
+    IS_MUTED_FIELD_NUMBER: _builtins.int
+    PLAYBACK_FIELD_NUMBER: _builtins.int
+    device_id: _builtins.str
+    is_on: _builtins.bool
+    volume_level: _builtins.int
+    is_muted: _builtins.bool
+    @_builtins.property
+    def playback(self) -> Global___Metadata: ...
+    def __init__(
+        self,
+        *,
+        device_id: _builtins.str = ...,
+        is_on: _builtins.bool = ...,
+        volume_level: _builtins.int = ...,
+        is_muted: _builtins.bool = ...,
+        playback: Global___Metadata | None = ...,
+    ) -> None: ...
+    _HasFieldArgType: _TypeAlias = _typing.Literal["playback", b"playback"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["device_id", b"device_id", "is_muted", b"is_muted", "is_on", b"is_on", "playback", b"playback", "volume_level", b"volume_level"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+
+Global___DeviceState: _TypeAlias = DeviceState  # noqa: Y015
+
+@_typing.final
 class StateSync(_message.Message):
     """State synchronization response"""
 
     DESCRIPTOR: _descriptor.Descriptor
 
-    METADATA_FIELD_NUMBER: _builtins.int
     TIME_FIELD_NUMBER: _builtins.int
-    @_builtins.property
-    def metadata(self) -> Global___Metadata:
-        """Optional metadata (NanoPB will generate has_metadata automatically)"""
-
+    DEVICES_FIELD_NUMBER: _builtins.int
     @_builtins.property
     def time(self) -> Global___Time:
         """Optional time data (NanoPB will generate has_time automatically)"""
 
+    @_builtins.property
+    def devices(self) -> _containers.RepeatedCompositeFieldContainer[Global___DeviceState]:
+        """Per-device state snapshots"""
+
     def __init__(
         self,
         *,
-        metadata: Global___Metadata | None = ...,
         time: Global___Time | None = ...,
+        devices: _abc.Iterable[Global___DeviceState] | None = ...,
     ) -> None: ...
-    _HasFieldArgType: _TypeAlias = _typing.Literal["metadata", b"metadata", "time", b"time"]  # noqa: Y015
+    _HasFieldArgType: _TypeAlias = _typing.Literal["time", b"time"]  # noqa: Y015
     def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
-    _ClearFieldArgType: _TypeAlias = _typing.Literal["metadata", b"metadata", "time", b"time"]  # noqa: Y015
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["devices", b"devices", "time", b"time"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
 
 Global___StateSync: _TypeAlias = StateSync  # noqa: Y015

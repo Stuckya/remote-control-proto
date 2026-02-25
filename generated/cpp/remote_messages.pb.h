@@ -165,14 +165,26 @@ typedef struct _omote_Time {
 PB_PACKED_STRUCT_END
 
 PB_PACKED_STRUCT_START
+/* Device state for sync responses */
+typedef struct _omote_DeviceState {
+    char device_id[32];
+    bool is_on;
+    int32_t volume_level;
+    bool is_muted;
+    bool has_playback;
+    omote_Metadata playback;
+} pb_packed omote_DeviceState;
+PB_PACKED_STRUCT_END
+
+PB_PACKED_STRUCT_START
 /* State synchronization response */
 typedef struct _omote_StateSync {
-    /* Optional metadata (NanoPB will generate has_metadata automatically) */
-    bool has_metadata;
-    omote_Metadata metadata;
     /* Optional time data (NanoPB will generate has_time automatically) */
     bool has_time;
     omote_Time time;
+    /* Per-device state snapshots */
+    pb_size_t devices_count;
+    omote_DeviceState devices[8];
 } pb_packed omote_StateSync;
 PB_PACKED_STRUCT_END
 
@@ -244,6 +256,7 @@ extern "C" {
 
 
 
+
 #define omote_CommandResult_kind_ENUMTYPE omote_ResponseKind
 
 
@@ -256,7 +269,8 @@ extern "C" {
 #define omote_Error_init_default                 {""}
 #define omote_Metadata_init_default              {"", "", "", 0, 0, ""}
 #define omote_Time_init_default                  {0, 0}
-#define omote_StateSync_init_default             {false, omote_Metadata_init_default, false, omote_Time_init_default}
+#define omote_DeviceState_init_default           {"", 0, 0, 0, false, omote_Metadata_init_default}
+#define omote_StateSync_init_default             {false, omote_Time_init_default, 0, {omote_DeviceState_init_default, omote_DeviceState_init_default, omote_DeviceState_init_default, omote_DeviceState_init_default, omote_DeviceState_init_default, omote_DeviceState_init_default, omote_DeviceState_init_default, omote_DeviceState_init_default}}
 #define omote_PairingStatus_init_default         {"", "", "", 0, 0, ""}
 #define omote_CommandResult_init_default         {_omote_ResponseKind_MIN, 0, 0, {omote_Ack_init_default}}
 #define omote_RemoteEvent_init_zero              {"", _omote_OmoteCommand_MIN, _omote_OmoteCommandType_MIN, "", 0, {0, {0}}}
@@ -267,7 +281,8 @@ extern "C" {
 #define omote_Error_init_zero                    {""}
 #define omote_Metadata_init_zero                 {"", "", "", 0, 0, ""}
 #define omote_Time_init_zero                     {0, 0}
-#define omote_StateSync_init_zero                {false, omote_Metadata_init_zero, false, omote_Time_init_zero}
+#define omote_DeviceState_init_zero              {"", 0, 0, 0, false, omote_Metadata_init_zero}
+#define omote_StateSync_init_zero                {false, omote_Time_init_zero, 0, {omote_DeviceState_init_zero, omote_DeviceState_init_zero, omote_DeviceState_init_zero, omote_DeviceState_init_zero, omote_DeviceState_init_zero, omote_DeviceState_init_zero, omote_DeviceState_init_zero, omote_DeviceState_init_zero}}
 #define omote_PairingStatus_init_zero            {"", "", "", 0, 0, ""}
 #define omote_CommandResult_init_zero            {_omote_ResponseKind_MIN, 0, 0, {omote_Ack_init_zero}}
 
@@ -292,8 +307,13 @@ extern "C" {
 #define omote_Metadata_state_tag                 6
 #define omote_Time_timestamp_tag                 1
 #define omote_Time_timezone_offset_tag           2
-#define omote_StateSync_metadata_tag             1
-#define omote_StateSync_time_tag                 2
+#define omote_DeviceState_device_id_tag          1
+#define omote_DeviceState_is_on_tag              2
+#define omote_DeviceState_volume_level_tag       3
+#define omote_DeviceState_is_muted_tag           4
+#define omote_DeviceState_playback_tag           5
+#define omote_StateSync_time_tag                 1
+#define omote_StateSync_devices_tag              2
 #define omote_PairingStatus_device_id_tag        1
 #define omote_PairingStatus_step_tag             2
 #define omote_PairingStatus_message_tag          3
@@ -364,13 +384,23 @@ X(a, STATIC,   SINGULAR, INT32,    timezone_offset,   2)
 #define omote_Time_CALLBACK NULL
 #define omote_Time_DEFAULT NULL
 
+#define omote_DeviceState_FIELDLIST(X, a) \
+X(a, STATIC,   SINGULAR, STRING,   device_id,         1) \
+X(a, STATIC,   SINGULAR, BOOL,     is_on,             2) \
+X(a, STATIC,   SINGULAR, INT32,    volume_level,      3) \
+X(a, STATIC,   SINGULAR, BOOL,     is_muted,          4) \
+X(a, STATIC,   OPTIONAL, MESSAGE,  playback,          5)
+#define omote_DeviceState_CALLBACK NULL
+#define omote_DeviceState_DEFAULT NULL
+#define omote_DeviceState_playback_MSGTYPE omote_Metadata
+
 #define omote_StateSync_FIELDLIST(X, a) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  metadata,          1) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  time,              2)
+X(a, STATIC,   OPTIONAL, MESSAGE,  time,              1) \
+X(a, STATIC,   REPEATED, MESSAGE,  devices,           2)
 #define omote_StateSync_CALLBACK NULL
 #define omote_StateSync_DEFAULT NULL
-#define omote_StateSync_metadata_MSGTYPE omote_Metadata
 #define omote_StateSync_time_MSGTYPE omote_Time
+#define omote_StateSync_devices_MSGTYPE omote_DeviceState
 
 #define omote_PairingStatus_FIELDLIST(X, a) \
 X(a, STATIC,   SINGULAR, STRING,   device_id,         1) \
@@ -410,6 +440,7 @@ extern const pb_msgdesc_t omote_RawCommand_msg;
 extern const pb_msgdesc_t omote_Error_msg;
 extern const pb_msgdesc_t omote_Metadata_msg;
 extern const pb_msgdesc_t omote_Time_msg;
+extern const pb_msgdesc_t omote_DeviceState_msg;
 extern const pb_msgdesc_t omote_StateSync_msg;
 extern const pb_msgdesc_t omote_PairingStatus_msg;
 extern const pb_msgdesc_t omote_CommandResult_msg;
@@ -423,6 +454,7 @@ extern const pb_msgdesc_t omote_CommandResult_msg;
 #define omote_Error_fields &omote_Error_msg
 #define omote_Metadata_fields &omote_Metadata_msg
 #define omote_Time_fields &omote_Time_msg
+#define omote_DeviceState_fields &omote_DeviceState_msg
 #define omote_StateSync_fields &omote_StateSync_msg
 #define omote_PairingStatus_fields &omote_PairingStatus_msg
 #define omote_CommandResult_fields &omote_CommandResult_msg
@@ -430,14 +462,15 @@ extern const pb_msgdesc_t omote_CommandResult_msg;
 /* Maximum encoded size of messages (where known) */
 #define OMOTE_REMOTE_MESSAGES_PB_H_MAX_SIZE      omote_CommandResult_size
 #define omote_Ack_size                           0
-#define omote_CommandResult_size                 277
+#define omote_CommandResult_size                 2253
+#define omote_DeviceState_size                   275
 #define omote_Error_size                         130
 #define omote_Metadata_size                      224
 #define omote_PairingStatus_size                 269
 #define omote_Power_size                         2
 #define omote_RawCommand_size                    133
 #define omote_RemoteEvent_size                   145
-#define omote_StateSync_size                     249
+#define omote_StateSync_size                     2246
 #define omote_Time_size                          20
 #define omote_Volume_size                        7
 
