@@ -98,9 +98,8 @@ message Ack {
 
 // Volume level response
 message Volume {
-  // Volume level in dB (can be negative, using sint32 for zigzag encoding)
-  // Examples: -23 dB, 0 dB, +12 dB
-  sint32 level = 1;
+  // Volume level in dB (float for half-dB precision, e.g. -30.5)
+  float level = 1;
 
   // Mute state
   bool is_muted = 2;
