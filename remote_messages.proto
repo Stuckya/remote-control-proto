@@ -28,15 +28,15 @@ enum OmoteCommand {
   VOL_MUTE = 13;
   SKIP_BACKWARD = 14;
   SKIP_FORWARD = 15;
-  
+
   // Generic device pairing commands
   PAIRING_START = 16;
   PAIRING_SUBMIT_PIN = 17;
   PAIRING_CANCEL = 18;
-  
+
   // State synchronization
   SYNC_STATE = 19;
-  
+
   // Additional commands to be mapped
   STOP = 20;
   REWIND = 21;
@@ -60,20 +60,20 @@ enum OmoteCommand {
 message RemoteEvent {
   // Device identifier (string for now, may migrate to uint32 device_id later)
   string device = 1;
-  
+
   // Remote control command
   OmoteCommand command = 2;
-  
+
   // Command type (short press, long press)
   OmoteCommandType type = 3;
-  
+
   // Optional remote identifier
   string remote_id = 4;
-  
+
   // MAC address of the remote (8 bytes for EUI-64)
   // Using fixed64 for consistent encoding
   fixed64 remote_mac = 5;
-  
+
   // Optional additional data (escape hatch for custom payloads)
   // Limited to 32 bytes for ESP-NOW compatibility
   bytes data = 10;
@@ -85,11 +85,10 @@ enum ResponseKind {
   ACK = 1;
   VOLUME = 2;
   POWER = 3;
-  RAW_COMMAND = 4;
-  ERROR = 5;
-  STATE_SYNC = 6;
-  PAIRING = 7;
-  NONE = 8;
+  ERROR = 4;
+  STATE_SYNC = 5;
+  PAIRING = 6;
+  NONE = 7;
 }
 
 // Acknowledgment response (empty)
@@ -99,10 +98,10 @@ message Ack {
 
 // Volume level response
 message Volume {
-  // Volume level in dB (can be negative, using sfixed32 for signed values)
-  // Examples: -23.0 dB, 0.0 dB, +12.0 dB
-  sfixed32 level = 1;
-  
+  // Volume level in dB (can be negative, using sint32 for zigzag encoding)
+  // Examples: -23 dB, 0 dB, +12 dB
+  sint32 level = 1;
+
   // Mute state
   bool is_muted = 2;
 }
@@ -110,15 +109,6 @@ message Volume {
 // Power state response
 message Power {
   bool is_on = 1;
-}
-
-// Raw command response
-message RawCommand {
-  // Raw response data (string or bytes)
-  bytes raw_response = 1;
-  
-  // Success indicator
-  bool success = 2;
 }
 
 // Error response
@@ -131,33 +121,37 @@ message Metadata {
   string title = 1;
   string artist = 2;
   string album = 3;
-  
+
   // Duration in seconds (0 if unknown)
   uint32 duration = 4;
-  
+
   // Current position in seconds
   uint32 position = 5;
-  
+
   // Playback state: "playing", "paused", "stopped", etc.
   string state = 6;
+}
+
+// Media player state for devices with playback capabilities
+message MediaPlayerState {
+  Metadata playback = 1;
 }
 
 // Time synchronization data
 message Time {
   // Unix epoch timestamp (using fixed64 for consistent encoding)
   fixed64 timestamp = 1;
-  
-  // Timezone offset in seconds
-  int32 timezone_offset = 2;
+
+  // Timezone offset in seconds (using sint32 for zigzag encoding of negative offsets)
+  sint32 timezone_offset = 2;
 }
 
 // Device state for sync responses
 message DeviceState {
   string device_id = 1;
   bool is_on = 2;
-  int32 volume_level = 3;
-  bool is_muted = 4;
-  Metadata playback = 5;
+  Volume volume = 3;
+  MediaPlayerState media_player = 4;
 }
 
 // State synchronization response
@@ -173,19 +167,19 @@ message StateSync {
 message PairingStatus {
   // Device identifier
   string device_id = 1;
-  
+
   // Pairing step: "started", "awaiting_pin", "success", "failed", "cancelled"
   string step = 2;
-  
+
   // User-facing message (e.g., "Enter PIN shown on Apple TV")
   string message = 3;
-  
+
   // Whether a PIN is required for this step
   bool requires_pin = 4;
-  
+
   // Expected PIN length (0 if unknown or not applicable)
   uint32 expected_pin_length = 5;
-  
+
   // Optional context token to track pairing session
   string context_token = 6;
 }
@@ -194,19 +188,14 @@ message PairingStatus {
 message CommandResult {
   // Response type
   ResponseKind kind = 1;
-  
-  // Whether the device driver supports bidirectional responses
-  bool supports_response = 2;
-  
+
   // Response data (only one will be set based on kind)
   oneof data {
     Ack ack = 10;
     Volume volume = 11;
     Power power = 12;
-    RawCommand raw_command = 13;
-    Error error = 14;
-    StateSync state_sync = 15;
-    PairingStatus pairing = 16;
+    Error error = 13;
+    StateSync state_sync = 14;
+    PairingStatus pairing = 15;
   }
 }
-

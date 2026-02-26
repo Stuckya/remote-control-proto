@@ -13,7 +13,6 @@ omote.RemoteEvent.data max_size:64  # Increased for pairing: PIN (16 hex) + UUID
 # CommandResult options - no dynamic allocation needed for message itself
 
 # Nested message options - static buffers for all strings/bytes
-omote.RawCommand.raw_response max_size:128
 omote.Error.message max_size:128
 omote.Metadata.title max_size:64
 omote.Metadata.artist max_size:64
