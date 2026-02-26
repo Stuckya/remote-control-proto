@@ -105,9 +105,8 @@ PB_PACKED_STRUCT_END
 PB_PACKED_STRUCT_START
 /* Volume level response */
 typedef struct _omote_Volume {
-    /* Volume level in dB (can be negative, using sint32 for zigzag encoding)
- Examples: -23 dB, 0 dB, +12 dB */
-    int32_t level;
+    /* Volume level in dB (float for half-dB precision, e.g. -30.5) */
+    float level;
     /* Mute state */
     bool is_muted;
 } pb_packed omote_Volume;
@@ -336,7 +335,7 @@ X(a, STATIC,   SINGULAR, BYTES,    data,             10)
 #define omote_Ack_DEFAULT NULL
 
 #define omote_Volume_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, SINT32,   level,             1) \
+X(a, STATIC,   SINGULAR, FLOAT,    level,             1) \
 X(a, STATIC,   SINGULAR, BOOL,     is_muted,          2)
 #define omote_Volume_CALLBACK NULL
 #define omote_Volume_DEFAULT NULL
@@ -448,17 +447,17 @@ extern const pb_msgdesc_t omote_CommandResult_msg;
 /* Maximum encoded size of messages (where known) */
 #define OMOTE_REMOTE_MESSAGES_PB_H_MAX_SIZE      omote_CommandResult_size
 #define omote_Ack_size                           0
-#define omote_CommandResult_size                 2246
-#define omote_DeviceState_size                   275
+#define omote_CommandResult_size                 2238
+#define omote_DeviceState_size                   274
 #define omote_Error_size                         130
 #define omote_MediaPlayerState_size              227
 #define omote_Metadata_size                      224
 #define omote_PairingStatus_size                 269
 #define omote_Power_size                         2
 #define omote_RemoteEvent_size                   145
-#define omote_StateSync_size                     2241
+#define omote_StateSync_size                     2233
 #define omote_Time_size                          15
-#define omote_Volume_size                        8
+#define omote_Volume_size                        7
 
 #ifdef __cplusplus
 } /* extern "C" */

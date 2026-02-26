@@ -222,16 +222,14 @@ class Volume(_message.Message):
 
     LEVEL_FIELD_NUMBER: _builtins.int
     IS_MUTED_FIELD_NUMBER: _builtins.int
-    level: _builtins.int
-    """Volume level in dB (can be negative, using sint32 for zigzag encoding)
-    Examples: -23 dB, 0 dB, +12 dB
-    """
+    level: _builtins.float
+    """Volume level in dB (float for half-dB precision, e.g. -30.5)"""
     is_muted: _builtins.bool
     """Mute state"""
     def __init__(
         self,
         *,
-        level: _builtins.int = ...,
+        level: _builtins.float = ...,
         is_muted: _builtins.bool = ...,
     ) -> None: ...
     _ClearFieldArgType: _TypeAlias = _typing.Literal["is_muted", b"is_muted", "level", b"level"]  # noqa: Y015
