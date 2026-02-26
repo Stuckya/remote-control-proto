@@ -18,13 +18,13 @@ PB_BIND(omote_Volume, omote_Volume, AUTO)
 PB_BIND(omote_Power, omote_Power, AUTO)
 
 
-PB_BIND(omote_RawCommand, omote_RawCommand, AUTO)
-
-
 PB_BIND(omote_Error, omote_Error, AUTO)
 
 
 PB_BIND(omote_Metadata, omote_Metadata, AUTO)
+
+
+PB_BIND(omote_MediaPlayerState, omote_MediaPlayerState, AUTO)
 
 
 PB_BIND(omote_Time, omote_Time, AUTO)

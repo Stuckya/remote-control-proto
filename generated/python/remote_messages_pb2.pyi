@@ -139,11 +139,10 @@ class _ResponseKindEnumTypeWrapper(_enum_type_wrapper._EnumTypeWrapper[_Response
     ACK: _ResponseKind.ValueType  # 1
     VOLUME: _ResponseKind.ValueType  # 2
     POWER: _ResponseKind.ValueType  # 3
-    RAW_COMMAND: _ResponseKind.ValueType  # 4
-    ERROR: _ResponseKind.ValueType  # 5
-    STATE_SYNC: _ResponseKind.ValueType  # 6
-    PAIRING: _ResponseKind.ValueType  # 7
-    NONE: _ResponseKind.ValueType  # 8
+    ERROR: _ResponseKind.ValueType  # 4
+    STATE_SYNC: _ResponseKind.ValueType  # 5
+    PAIRING: _ResponseKind.ValueType  # 6
+    NONE: _ResponseKind.ValueType  # 7
 
 class ResponseKind(_ResponseKind, metaclass=_ResponseKindEnumTypeWrapper):
     """Response kind for command results"""
@@ -152,11 +151,10 @@ RESPONSE_KIND_UNSPECIFIED: ResponseKind.ValueType  # 0
 ACK: ResponseKind.ValueType  # 1
 VOLUME: ResponseKind.ValueType  # 2
 POWER: ResponseKind.ValueType  # 3
-RAW_COMMAND: ResponseKind.ValueType  # 4
-ERROR: ResponseKind.ValueType  # 5
-STATE_SYNC: ResponseKind.ValueType  # 6
-PAIRING: ResponseKind.ValueType  # 7
-NONE: ResponseKind.ValueType  # 8
+ERROR: ResponseKind.ValueType  # 4
+STATE_SYNC: ResponseKind.ValueType  # 5
+PAIRING: ResponseKind.ValueType  # 6
+NONE: ResponseKind.ValueType  # 7
 Global___ResponseKind: _TypeAlias = ResponseKind  # noqa: Y015
 
 @_typing.final
@@ -225,8 +223,8 @@ class Volume(_message.Message):
     LEVEL_FIELD_NUMBER: _builtins.int
     IS_MUTED_FIELD_NUMBER: _builtins.int
     level: _builtins.int
-    """Volume level in dB (can be negative, using sfixed32 for signed values)
-    Examples: -23.0 dB, 0.0 dB, +12.0 dB
+    """Volume level in dB (can be negative, using sint32 for zigzag encoding)
+    Examples: -23 dB, 0 dB, +12 dB
     """
     is_muted: _builtins.bool
     """Mute state"""
@@ -258,29 +256,6 @@ class Power(_message.Message):
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
 
 Global___Power: _TypeAlias = Power  # noqa: Y015
-
-@_typing.final
-class RawCommand(_message.Message):
-    """Raw command response"""
-
-    DESCRIPTOR: _descriptor.Descriptor
-
-    RAW_RESPONSE_FIELD_NUMBER: _builtins.int
-    SUCCESS_FIELD_NUMBER: _builtins.int
-    raw_response: _builtins.bytes
-    """Raw response data (string or bytes)"""
-    success: _builtins.bool
-    """Success indicator"""
-    def __init__(
-        self,
-        *,
-        raw_response: _builtins.bytes = ...,
-        success: _builtins.bool = ...,
-    ) -> None: ...
-    _ClearFieldArgType: _TypeAlias = _typing.Literal["raw_response", b"raw_response", "success", b"success"]  # noqa: Y015
-    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
-
-Global___RawCommand: _TypeAlias = RawCommand  # noqa: Y015
 
 @_typing.final
 class Error(_message.Message):
@@ -337,6 +312,27 @@ class Metadata(_message.Message):
 Global___Metadata: _TypeAlias = Metadata  # noqa: Y015
 
 @_typing.final
+class MediaPlayerState(_message.Message):
+    """Media player state for devices with playback capabilities"""
+
+    DESCRIPTOR: _descriptor.Descriptor
+
+    PLAYBACK_FIELD_NUMBER: _builtins.int
+    @_builtins.property
+    def playback(self) -> Global___Metadata: ...
+    def __init__(
+        self,
+        *,
+        playback: Global___Metadata | None = ...,
+    ) -> None: ...
+    _HasFieldArgType: _TypeAlias = _typing.Literal["playback", b"playback"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["playback", b"playback"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+
+Global___MediaPlayerState: _TypeAlias = MediaPlayerState  # noqa: Y015
+
+@_typing.final
 class Time(_message.Message):
     """Time synchronization data"""
 
@@ -347,7 +343,7 @@ class Time(_message.Message):
     timestamp: _builtins.int
     """Unix epoch timestamp (using fixed64 for consistent encoding)"""
     timezone_offset: _builtins.int
-    """Timezone offset in seconds"""
+    """Timezone offset in seconds (using sint32 for zigzag encoding of negative offsets)"""
     def __init__(
         self,
         *,
@@ -367,27 +363,25 @@ class DeviceState(_message.Message):
 
     DEVICE_ID_FIELD_NUMBER: _builtins.int
     IS_ON_FIELD_NUMBER: _builtins.int
-    VOLUME_LEVEL_FIELD_NUMBER: _builtins.int
-    IS_MUTED_FIELD_NUMBER: _builtins.int
-    PLAYBACK_FIELD_NUMBER: _builtins.int
+    VOLUME_FIELD_NUMBER: _builtins.int
+    MEDIA_PLAYER_FIELD_NUMBER: _builtins.int
     device_id: _builtins.str
     is_on: _builtins.bool
-    volume_level: _builtins.int
-    is_muted: _builtins.bool
     @_builtins.property
-    def playback(self) -> Global___Metadata: ...
+    def volume(self) -> Global___Volume: ...
+    @_builtins.property
+    def media_player(self) -> Global___MediaPlayerState: ...
     def __init__(
         self,
         *,
         device_id: _builtins.str = ...,
         is_on: _builtins.bool = ...,
-        volume_level: _builtins.int = ...,
-        is_muted: _builtins.bool = ...,
-        playback: Global___Metadata | None = ...,
+        volume: Global___Volume | None = ...,
+        media_player: Global___MediaPlayerState | None = ...,
     ) -> None: ...
-    _HasFieldArgType: _TypeAlias = _typing.Literal["playback", b"playback"]  # noqa: Y015
+    _HasFieldArgType: _TypeAlias = _typing.Literal["media_player", b"media_player", "volume", b"volume"]  # noqa: Y015
     def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
-    _ClearFieldArgType: _TypeAlias = _typing.Literal["device_id", b"device_id", "is_muted", b"is_muted", "is_on", b"is_on", "playback", b"playback", "volume_level", b"volume_level"]  # noqa: Y015
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["device_id", b"device_id", "is_on", b"is_on", "media_player", b"media_player", "volume", b"volume"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
 
 Global___DeviceState: _TypeAlias = DeviceState  # noqa: Y015
@@ -467,26 +461,20 @@ class CommandResult(_message.Message):
     DESCRIPTOR: _descriptor.Descriptor
 
     KIND_FIELD_NUMBER: _builtins.int
-    SUPPORTS_RESPONSE_FIELD_NUMBER: _builtins.int
     ACK_FIELD_NUMBER: _builtins.int
     VOLUME_FIELD_NUMBER: _builtins.int
     POWER_FIELD_NUMBER: _builtins.int
-    RAW_COMMAND_FIELD_NUMBER: _builtins.int
     ERROR_FIELD_NUMBER: _builtins.int
     STATE_SYNC_FIELD_NUMBER: _builtins.int
     PAIRING_FIELD_NUMBER: _builtins.int
     kind: Global___ResponseKind.ValueType
     """Response type"""
-    supports_response: _builtins.bool
-    """Whether the device driver supports bidirectional responses"""
     @_builtins.property
     def ack(self) -> Global___Ack: ...
     @_builtins.property
     def volume(self) -> Global___Volume: ...
     @_builtins.property
     def power(self) -> Global___Power: ...
-    @_builtins.property
-    def raw_command(self) -> Global___RawCommand: ...
     @_builtins.property
     def error(self) -> Global___Error: ...
     @_builtins.property
@@ -497,20 +485,18 @@ class CommandResult(_message.Message):
         self,
         *,
         kind: Global___ResponseKind.ValueType = ...,
-        supports_response: _builtins.bool = ...,
         ack: Global___Ack | None = ...,
         volume: Global___Volume | None = ...,
         power: Global___Power | None = ...,
-        raw_command: Global___RawCommand | None = ...,
         error: Global___Error | None = ...,
         state_sync: Global___StateSync | None = ...,
         pairing: Global___PairingStatus | None = ...,
     ) -> None: ...
-    _HasFieldArgType: _TypeAlias = _typing.Literal["ack", b"ack", "data", b"data", "error", b"error", "pairing", b"pairing", "power", b"power", "raw_command", b"raw_command", "state_sync", b"state_sync", "volume", b"volume"]  # noqa: Y015
+    _HasFieldArgType: _TypeAlias = _typing.Literal["ack", b"ack", "data", b"data", "error", b"error", "pairing", b"pairing", "power", b"power", "state_sync", b"state_sync", "volume", b"volume"]  # noqa: Y015
     def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
-    _ClearFieldArgType: _TypeAlias = _typing.Literal["ack", b"ack", "data", b"data", "error", b"error", "kind", b"kind", "pairing", b"pairing", "power", b"power", "raw_command", b"raw_command", "state_sync", b"state_sync", "supports_response", b"supports_response", "volume", b"volume"]  # noqa: Y015
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["ack", b"ack", "data", b"data", "error", b"error", "kind", b"kind", "pairing", b"pairing", "power", b"power", "state_sync", b"state_sync", "volume", b"volume"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
-    _WhichOneofReturnType_data: _TypeAlias = _typing.Literal["ack", "volume", "power", "raw_command", "error", "state_sync", "pairing"]  # noqa: Y015
+    _WhichOneofReturnType_data: _TypeAlias = _typing.Literal["ack", "volume", "power", "error", "state_sync", "pairing"]  # noqa: Y015
     _WhichOneofArgType_data: _TypeAlias = _typing.Literal["data", b"data"]  # noqa: Y015
     def WhichOneof(self, oneof_group: _WhichOneofArgType_data) -> _WhichOneofReturnType_data | None: ...
 

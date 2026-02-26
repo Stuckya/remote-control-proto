@@ -67,11 +67,10 @@ typedef enum _omote_ResponseKind {
     omote_ResponseKind_ACK = 1,
     omote_ResponseKind_VOLUME = 2,
     omote_ResponseKind_POWER = 3,
-    omote_ResponseKind_RAW_COMMAND = 4,
-    omote_ResponseKind_ERROR = 5,
-    omote_ResponseKind_STATE_SYNC = 6,
-    omote_ResponseKind_PAIRING = 7,
-    omote_ResponseKind_NONE = 8
+    omote_ResponseKind_ERROR = 4,
+    omote_ResponseKind_STATE_SYNC = 5,
+    omote_ResponseKind_PAIRING = 6,
+    omote_ResponseKind_NONE = 7
 } omote_ResponseKind;
 
 /* Struct definitions */
@@ -106,8 +105,8 @@ PB_PACKED_STRUCT_END
 PB_PACKED_STRUCT_START
 /* Volume level response */
 typedef struct _omote_Volume {
-    /* Volume level in dB (can be negative, using sfixed32 for signed values)
- Examples: -23.0 dB, 0.0 dB, +12.0 dB */
+    /* Volume level in dB (can be negative, using sint32 for zigzag encoding)
+ Examples: -23 dB, 0 dB, +12 dB */
     int32_t level;
     /* Mute state */
     bool is_muted;
@@ -119,17 +118,6 @@ PB_PACKED_STRUCT_START
 typedef struct _omote_Power {
     bool is_on;
 } pb_packed omote_Power;
-PB_PACKED_STRUCT_END
-
-typedef PB_BYTES_ARRAY_T(128) omote_RawCommand_raw_response_t;
-PB_PACKED_STRUCT_START
-/* Raw command response */
-typedef struct _omote_RawCommand {
-    /* Raw response data (string or bytes) */
-    omote_RawCommand_raw_response_t raw_response;
-    /* Success indicator */
-    bool success;
-} pb_packed omote_RawCommand;
 PB_PACKED_STRUCT_END
 
 PB_PACKED_STRUCT_START
@@ -155,11 +143,19 @@ typedef struct _omote_Metadata {
 PB_PACKED_STRUCT_END
 
 PB_PACKED_STRUCT_START
+/* Media player state for devices with playback capabilities */
+typedef struct _omote_MediaPlayerState {
+    bool has_playback;
+    omote_Metadata playback;
+} pb_packed omote_MediaPlayerState;
+PB_PACKED_STRUCT_END
+
+PB_PACKED_STRUCT_START
 /* Time synchronization data */
 typedef struct _omote_Time {
     /* Unix epoch timestamp (using fixed64 for consistent encoding) */
     uint64_t timestamp;
-    /* Timezone offset in seconds */
+    /* Timezone offset in seconds (using sint32 for zigzag encoding of negative offsets) */
     int32_t timezone_offset;
 } pb_packed omote_Time;
 PB_PACKED_STRUCT_END
@@ -169,10 +165,10 @@ PB_PACKED_STRUCT_START
 typedef struct _omote_DeviceState {
     char device_id[32];
     bool is_on;
-    int32_t volume_level;
-    bool is_muted;
-    bool has_playback;
-    omote_Metadata playback;
+    bool has_volume;
+    omote_Volume volume;
+    bool has_media_player;
+    omote_MediaPlayerState media_player;
 } pb_packed omote_DeviceState;
 PB_PACKED_STRUCT_END
 
@@ -211,14 +207,11 @@ PB_PACKED_STRUCT_START
 typedef struct _omote_CommandResult {
     /* Response type */
     omote_ResponseKind kind;
-    /* Whether the device driver supports bidirectional responses */
-    bool supports_response;
     pb_size_t which_data;
     union {
         omote_Ack ack;
         omote_Volume volume;
         omote_Power power;
-        omote_RawCommand raw_command;
         omote_Error error;
         omote_StateSync state_sync;
         omote_PairingStatus pairing;
@@ -265,26 +258,26 @@ extern "C" {
 #define omote_Ack_init_default                   {0}
 #define omote_Volume_init_default                {0, 0}
 #define omote_Power_init_default                 {0}
-#define omote_RawCommand_init_default            {{0, {0}}, 0}
 #define omote_Error_init_default                 {""}
 #define omote_Metadata_init_default              {"", "", "", 0, 0, ""}
+#define omote_MediaPlayerState_init_default      {false, omote_Metadata_init_default}
 #define omote_Time_init_default                  {0, 0}
-#define omote_DeviceState_init_default           {"", 0, 0, 0, false, omote_Metadata_init_default}
+#define omote_DeviceState_init_default           {"", 0, false, omote_Volume_init_default, false, omote_MediaPlayerState_init_default}
 #define omote_StateSync_init_default             {false, omote_Time_init_default, 0, {omote_DeviceState_init_default, omote_DeviceState_init_default, omote_DeviceState_init_default, omote_DeviceState_init_default, omote_DeviceState_init_default, omote_DeviceState_init_default, omote_DeviceState_init_default, omote_DeviceState_init_default}}
 #define omote_PairingStatus_init_default         {"", "", "", 0, 0, ""}
-#define omote_CommandResult_init_default         {_omote_ResponseKind_MIN, 0, 0, {omote_Ack_init_default}}
+#define omote_CommandResult_init_default         {_omote_ResponseKind_MIN, 0, {omote_Ack_init_default}}
 #define omote_RemoteEvent_init_zero              {"", _omote_OmoteCommand_MIN, _omote_OmoteCommandType_MIN, "", 0, {0, {0}}}
 #define omote_Ack_init_zero                      {0}
 #define omote_Volume_init_zero                   {0, 0}
 #define omote_Power_init_zero                    {0}
-#define omote_RawCommand_init_zero               {{0, {0}}, 0}
 #define omote_Error_init_zero                    {""}
 #define omote_Metadata_init_zero                 {"", "", "", 0, 0, ""}
+#define omote_MediaPlayerState_init_zero         {false, omote_Metadata_init_zero}
 #define omote_Time_init_zero                     {0, 0}
-#define omote_DeviceState_init_zero              {"", 0, 0, 0, false, omote_Metadata_init_zero}
+#define omote_DeviceState_init_zero              {"", 0, false, omote_Volume_init_zero, false, omote_MediaPlayerState_init_zero}
 #define omote_StateSync_init_zero                {false, omote_Time_init_zero, 0, {omote_DeviceState_init_zero, omote_DeviceState_init_zero, omote_DeviceState_init_zero, omote_DeviceState_init_zero, omote_DeviceState_init_zero, omote_DeviceState_init_zero, omote_DeviceState_init_zero, omote_DeviceState_init_zero}}
 #define omote_PairingStatus_init_zero            {"", "", "", 0, 0, ""}
-#define omote_CommandResult_init_zero            {_omote_ResponseKind_MIN, 0, 0, {omote_Ack_init_zero}}
+#define omote_CommandResult_init_zero            {_omote_ResponseKind_MIN, 0, {omote_Ack_init_zero}}
 
 /* Field tags (for use in manual encoding/decoding) */
 #define omote_RemoteEvent_device_tag             1
@@ -296,8 +289,6 @@ extern "C" {
 #define omote_Volume_level_tag                   1
 #define omote_Volume_is_muted_tag                2
 #define omote_Power_is_on_tag                    1
-#define omote_RawCommand_raw_response_tag        1
-#define omote_RawCommand_success_tag             2
 #define omote_Error_message_tag                  1
 #define omote_Metadata_title_tag                 1
 #define omote_Metadata_artist_tag                2
@@ -305,13 +296,13 @@ extern "C" {
 #define omote_Metadata_duration_tag              4
 #define omote_Metadata_position_tag              5
 #define omote_Metadata_state_tag                 6
+#define omote_MediaPlayerState_playback_tag      1
 #define omote_Time_timestamp_tag                 1
 #define omote_Time_timezone_offset_tag           2
 #define omote_DeviceState_device_id_tag          1
 #define omote_DeviceState_is_on_tag              2
-#define omote_DeviceState_volume_level_tag       3
-#define omote_DeviceState_is_muted_tag           4
-#define omote_DeviceState_playback_tag           5
+#define omote_DeviceState_volume_tag             3
+#define omote_DeviceState_media_player_tag       4
 #define omote_StateSync_time_tag                 1
 #define omote_StateSync_devices_tag              2
 #define omote_PairingStatus_device_id_tag        1
@@ -321,14 +312,12 @@ extern "C" {
 #define omote_PairingStatus_expected_pin_length_tag 5
 #define omote_PairingStatus_context_token_tag    6
 #define omote_CommandResult_kind_tag             1
-#define omote_CommandResult_supports_response_tag 2
 #define omote_CommandResult_ack_tag              10
 #define omote_CommandResult_volume_tag           11
 #define omote_CommandResult_power_tag            12
-#define omote_CommandResult_raw_command_tag      13
-#define omote_CommandResult_error_tag            14
-#define omote_CommandResult_state_sync_tag       15
-#define omote_CommandResult_pairing_tag          16
+#define omote_CommandResult_error_tag            13
+#define omote_CommandResult_state_sync_tag       14
+#define omote_CommandResult_pairing_tag          15
 
 /* Struct field encoding specification for nanopb */
 #define omote_RemoteEvent_FIELDLIST(X, a) \
@@ -347,7 +336,7 @@ X(a, STATIC,   SINGULAR, BYTES,    data,             10)
 #define omote_Ack_DEFAULT NULL
 
 #define omote_Volume_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, SFIXED32, level,             1) \
+X(a, STATIC,   SINGULAR, SINT32,   level,             1) \
 X(a, STATIC,   SINGULAR, BOOL,     is_muted,          2)
 #define omote_Volume_CALLBACK NULL
 #define omote_Volume_DEFAULT NULL
@@ -356,12 +345,6 @@ X(a, STATIC,   SINGULAR, BOOL,     is_muted,          2)
 X(a, STATIC,   SINGULAR, BOOL,     is_on,             1)
 #define omote_Power_CALLBACK NULL
 #define omote_Power_DEFAULT NULL
-
-#define omote_RawCommand_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, BYTES,    raw_response,      1) \
-X(a, STATIC,   SINGULAR, BOOL,     success,           2)
-#define omote_RawCommand_CALLBACK NULL
-#define omote_RawCommand_DEFAULT NULL
 
 #define omote_Error_FIELDLIST(X, a) \
 X(a, STATIC,   SINGULAR, STRING,   message,           1)
@@ -378,21 +361,27 @@ X(a, STATIC,   SINGULAR, STRING,   state,             6)
 #define omote_Metadata_CALLBACK NULL
 #define omote_Metadata_DEFAULT NULL
 
+#define omote_MediaPlayerState_FIELDLIST(X, a) \
+X(a, STATIC,   OPTIONAL, MESSAGE,  playback,          1)
+#define omote_MediaPlayerState_CALLBACK NULL
+#define omote_MediaPlayerState_DEFAULT NULL
+#define omote_MediaPlayerState_playback_MSGTYPE omote_Metadata
+
 #define omote_Time_FIELDLIST(X, a) \
 X(a, STATIC,   SINGULAR, FIXED64,  timestamp,         1) \
-X(a, STATIC,   SINGULAR, INT32,    timezone_offset,   2)
+X(a, STATIC,   SINGULAR, SINT32,   timezone_offset,   2)
 #define omote_Time_CALLBACK NULL
 #define omote_Time_DEFAULT NULL
 
 #define omote_DeviceState_FIELDLIST(X, a) \
 X(a, STATIC,   SINGULAR, STRING,   device_id,         1) \
 X(a, STATIC,   SINGULAR, BOOL,     is_on,             2) \
-X(a, STATIC,   SINGULAR, INT32,    volume_level,      3) \
-X(a, STATIC,   SINGULAR, BOOL,     is_muted,          4) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  playback,          5)
+X(a, STATIC,   OPTIONAL, MESSAGE,  volume,            3) \
+X(a, STATIC,   OPTIONAL, MESSAGE,  media_player,      4)
 #define omote_DeviceState_CALLBACK NULL
 #define omote_DeviceState_DEFAULT NULL
-#define omote_DeviceState_playback_MSGTYPE omote_Metadata
+#define omote_DeviceState_volume_MSGTYPE omote_Volume
+#define omote_DeviceState_media_player_MSGTYPE omote_MediaPlayerState
 
 #define omote_StateSync_FIELDLIST(X, a) \
 X(a, STATIC,   OPTIONAL, MESSAGE,  time,              1) \
@@ -414,20 +403,17 @@ X(a, STATIC,   SINGULAR, STRING,   context_token,     6)
 
 #define omote_CommandResult_FIELDLIST(X, a) \
 X(a, STATIC,   SINGULAR, UENUM,    kind,              1) \
-X(a, STATIC,   SINGULAR, BOOL,     supports_response,   2) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (data,ack,data.ack),  10) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (data,volume,data.volume),  11) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (data,power,data.power),  12) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (data,raw_command,data.raw_command),  13) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (data,error,data.error),  14) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (data,state_sync,data.state_sync),  15) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (data,pairing,data.pairing),  16)
+X(a, STATIC,   ONEOF,    MESSAGE,  (data,error,data.error),  13) \
+X(a, STATIC,   ONEOF,    MESSAGE,  (data,state_sync,data.state_sync),  14) \
+X(a, STATIC,   ONEOF,    MESSAGE,  (data,pairing,data.pairing),  15)
 #define omote_CommandResult_CALLBACK NULL
 #define omote_CommandResult_DEFAULT NULL
 #define omote_CommandResult_data_ack_MSGTYPE omote_Ack
 #define omote_CommandResult_data_volume_MSGTYPE omote_Volume
 #define omote_CommandResult_data_power_MSGTYPE omote_Power
-#define omote_CommandResult_data_raw_command_MSGTYPE omote_RawCommand
 #define omote_CommandResult_data_error_MSGTYPE omote_Error
 #define omote_CommandResult_data_state_sync_MSGTYPE omote_StateSync
 #define omote_CommandResult_data_pairing_MSGTYPE omote_PairingStatus
@@ -436,9 +422,9 @@ extern const pb_msgdesc_t omote_RemoteEvent_msg;
 extern const pb_msgdesc_t omote_Ack_msg;
 extern const pb_msgdesc_t omote_Volume_msg;
 extern const pb_msgdesc_t omote_Power_msg;
-extern const pb_msgdesc_t omote_RawCommand_msg;
 extern const pb_msgdesc_t omote_Error_msg;
 extern const pb_msgdesc_t omote_Metadata_msg;
+extern const pb_msgdesc_t omote_MediaPlayerState_msg;
 extern const pb_msgdesc_t omote_Time_msg;
 extern const pb_msgdesc_t omote_DeviceState_msg;
 extern const pb_msgdesc_t omote_StateSync_msg;
@@ -450,9 +436,9 @@ extern const pb_msgdesc_t omote_CommandResult_msg;
 #define omote_Ack_fields &omote_Ack_msg
 #define omote_Volume_fields &omote_Volume_msg
 #define omote_Power_fields &omote_Power_msg
-#define omote_RawCommand_fields &omote_RawCommand_msg
 #define omote_Error_fields &omote_Error_msg
 #define omote_Metadata_fields &omote_Metadata_msg
+#define omote_MediaPlayerState_fields &omote_MediaPlayerState_msg
 #define omote_Time_fields &omote_Time_msg
 #define omote_DeviceState_fields &omote_DeviceState_msg
 #define omote_StateSync_fields &omote_StateSync_msg
@@ -462,17 +448,17 @@ extern const pb_msgdesc_t omote_CommandResult_msg;
 /* Maximum encoded size of messages (where known) */
 #define OMOTE_REMOTE_MESSAGES_PB_H_MAX_SIZE      omote_CommandResult_size
 #define omote_Ack_size                           0
-#define omote_CommandResult_size                 2253
+#define omote_CommandResult_size                 2246
 #define omote_DeviceState_size                   275
 #define omote_Error_size                         130
+#define omote_MediaPlayerState_size              227
 #define omote_Metadata_size                      224
 #define omote_PairingStatus_size                 269
 #define omote_Power_size                         2
-#define omote_RawCommand_size                    133
 #define omote_RemoteEvent_size                   145
-#define omote_StateSync_size                     2246
-#define omote_Time_size                          20
-#define omote_Volume_size                        7
+#define omote_StateSync_size                     2241
+#define omote_Time_size                          15
+#define omote_Volume_size                        8
 
 #ifdef __cplusplus
 } /* extern "C" */
