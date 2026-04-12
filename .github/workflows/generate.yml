@@ -31,8 +31,8 @@ jobs:
         run: |
           protoc \
             --proto_path=. \
-            --python_out=src/omote_protos \
-            --mypy_out=src/omote_protos \
+            --python_out=src/omote/protos \
+            --mypy_out=src/omote/protos \
             remote_messages.proto
 
       - name: Install nanopb
@@ -53,7 +53,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add src/omote_protos/ generated/
+          git add src/omote/ generated/
           if git diff --cached --quiet; then
             echo "No changes to commit"
           else

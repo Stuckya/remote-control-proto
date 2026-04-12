@@ -14,7 +14,8 @@ dependencies = [
 
 [tool.setuptools.packages.find]
 where = ["src"]
-include = ["omote_protos*"]
+include = ["omote.*"]
+namespaces = true
 
 [tool.setuptools.package-data]
-omote_protos = ["py.typed", "*.pyi"]
+"omote.protos" = ["py.typed", "*.pyi"]
