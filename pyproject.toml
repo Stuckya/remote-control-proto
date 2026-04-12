@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "omote-protos"
+version = "0.1.0"
+description = "Shared protobuf schema for OMOTE ↔ Hub communication"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "protobuf>=5.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["omote_protos*"]
+
+[tool.setuptools.package-data]
+omote_protos = ["py.typed", "*.pyi"]
