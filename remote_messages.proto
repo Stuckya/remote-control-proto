@@ -110,9 +110,33 @@ message Power {
   bool is_on = 1;
 }
 
+// Categorizes a device failure so the OMOTE can decide whether to surface it
+// to the user or silently ignore it, without string-parsing the message.
+// Mirrors google.rpc.Status / ucapi's IntegrationSetupError pattern.
+enum ErrorCategory {
+  // Unset/unknown. Additive default; older clients see this and the OMOTE
+  // treats it as "surface" (fail-safe).
+  ERROR_CATEGORY_UNSPECIFIED = 0;
+
+  // Device unreachable: timeout, network failure, connection lost, or a
+  // missing/garbled response. The OMOTE should surface this.
+  DEVICE_UNAVAILABLE = 1;
+
+  // Expected command-level rejection: unsupported command, invalid input, or
+  // device-rejected. The OMOTE may safely ignore it (e.g. an unmapped button).
+  COMMAND_REJECTED = 2;
+
+  // Unexpected internal fault. The OMOTE should surface this.
+  INTERNAL = 3;
+}
+
 // Error response
 message Error {
   string message = 1;
+
+  // Classifies the failure; see ErrorCategory. Additive and back-compatible:
+  // older clients ignore it and treat every error as "surface".
+  ErrorCategory category = 2;
 }
 
 // Media metadata

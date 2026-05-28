@@ -255,6 +255,26 @@ class Power(_message.Message):
 
 Global___Power: _TypeAlias = Power  # noqa: Y015
 
+class _ErrorCategory:
+    ValueType = _typing.NewType("ValueType", _builtins.int)
+    V: _TypeAlias = ValueType  # noqa: Y015
+
+class _ErrorCategoryEnumTypeWrapper(_enum_type_wrapper._EnumTypeWrapper[_ErrorCategory.ValueType], _builtins.type):
+    DESCRIPTOR: _descriptor.EnumDescriptor
+    ERROR_CATEGORY_UNSPECIFIED: _ErrorCategory.ValueType  # 0
+    DEVICE_UNAVAILABLE: _ErrorCategory.ValueType  # 1
+    COMMAND_REJECTED: _ErrorCategory.ValueType  # 2
+    INTERNAL: _ErrorCategory.ValueType  # 3
+
+class ErrorCategory(_ErrorCategory, metaclass=_ErrorCategoryEnumTypeWrapper):
+    """Categorizes a device failure so the OMOTE can surface or ignore it"""
+
+ERROR_CATEGORY_UNSPECIFIED: ErrorCategory.ValueType  # 0
+DEVICE_UNAVAILABLE: ErrorCategory.ValueType  # 1
+COMMAND_REJECTED: ErrorCategory.ValueType  # 2
+INTERNAL: ErrorCategory.ValueType  # 3
+Global___ErrorCategory: _TypeAlias = ErrorCategory  # noqa: Y015
+
 @_typing.final
 class Error(_message.Message):
     """Error response"""
@@ -262,13 +282,16 @@ class Error(_message.Message):
     DESCRIPTOR: _descriptor.Descriptor
 
     MESSAGE_FIELD_NUMBER: _builtins.int
+    CATEGORY_FIELD_NUMBER: _builtins.int
     message: _builtins.str
+    category: Global___ErrorCategory.ValueType
     def __init__(
         self,
         *,
         message: _builtins.str = ...,
+        category: Global___ErrorCategory.ValueType = ...,
     ) -> None: ...
-    _ClearFieldArgType: _TypeAlias = _typing.Literal["message", b"message"]  # noqa: Y015
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["category", b"category", "message", b"message"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
 
 Global___Error: _TypeAlias = Error  # noqa: Y015
