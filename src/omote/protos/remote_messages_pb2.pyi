@@ -12,10 +12,10 @@ import builtins as _builtins
 import sys
 import typing as _typing
 
-if sys.version_info >= (3, 10):
-    from typing import TypeAlias as _TypeAlias
+if sys.version_info >= (3, 11):
+    from typing import TypeAlias as _TypeAlias, Never as _Never
 else:
-    from typing_extensions import TypeAlias as _TypeAlias
+    from typing_extensions import TypeAlias as _TypeAlias, Never as _Never
 
 DESCRIPTOR: _descriptor.FileDescriptor
 
@@ -157,6 +157,49 @@ PAIRING: ResponseKind.ValueType  # 6
 NONE: ResponseKind.ValueType  # 7
 Global___ResponseKind: _TypeAlias = ResponseKind  # noqa: Y015
 
+class _ErrorCategory:
+    ValueType = _typing.NewType("ValueType", _builtins.int)
+    V: _TypeAlias = ValueType  # noqa: Y015
+
+class _ErrorCategoryEnumTypeWrapper(_enum_type_wrapper._EnumTypeWrapper[_ErrorCategory.ValueType], _builtins.type):
+    DESCRIPTOR: _descriptor.EnumDescriptor
+    ERROR_CATEGORY_UNSPECIFIED: _ErrorCategory.ValueType  # 0
+    """Unset/unknown. Additive default; older clients see this and the OMOTE
+    treats it as "surface" (fail-safe).
+    """
+    DEVICE_UNAVAILABLE: _ErrorCategory.ValueType  # 1
+    """Device unreachable: timeout, network failure, connection lost, or a
+    missing/garbled response. The OMOTE should surface this.
+    """
+    COMMAND_REJECTED: _ErrorCategory.ValueType  # 2
+    """Expected command-level rejection: unsupported command, invalid input, or
+    device-rejected. The OMOTE may safely ignore it (e.g. an unmapped button).
+    """
+    INTERNAL: _ErrorCategory.ValueType  # 3
+    """Unexpected internal fault. The OMOTE should surface this."""
+
+class ErrorCategory(_ErrorCategory, metaclass=_ErrorCategoryEnumTypeWrapper):
+    """Categorizes a device failure so the OMOTE can decide whether to surface it
+    to the user or silently ignore it, without string-parsing the message.
+    Mirrors google.rpc.Status / ucapi's IntegrationSetupError pattern.
+    """
+
+ERROR_CATEGORY_UNSPECIFIED: ErrorCategory.ValueType  # 0
+"""Unset/unknown. Additive default; older clients see this and the OMOTE
+treats it as "surface" (fail-safe).
+"""
+DEVICE_UNAVAILABLE: ErrorCategory.ValueType  # 1
+"""Device unreachable: timeout, network failure, connection lost, or a
+missing/garbled response. The OMOTE should surface this.
+"""
+COMMAND_REJECTED: ErrorCategory.ValueType  # 2
+"""Expected command-level rejection: unsupported command, invalid input, or
+device-rejected. The OMOTE may safely ignore it (e.g. an unmapped button).
+"""
+INTERNAL: ErrorCategory.ValueType  # 3
+"""Unexpected internal fault. The OMOTE should surface this."""
+Global___ErrorCategory: _TypeAlias = ErrorCategory  # noqa: Y015
+
 @_typing.final
 class RemoteEvent(_message.Message):
     """Event sent from OMOTE remote to hub"""
@@ -195,8 +238,11 @@ class RemoteEvent(_message.Message):
         remote_mac: _builtins.int = ...,
         data: _builtins.bytes = ...,
     ) -> None: ...
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
     _ClearFieldArgType: _TypeAlias = _typing.Literal["command", b"command", "data", b"data", "device", b"device", "remote_id", b"remote_id", "remote_mac", b"remote_mac", "type", b"type"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
 Global___RemoteEvent: _TypeAlias = RemoteEvent  # noqa: Y015
 
@@ -211,6 +257,11 @@ class Ack(_message.Message):
     def __init__(
         self,
     ) -> None: ...
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
 Global___Ack: _TypeAlias = Ack  # noqa: Y015
 
@@ -232,8 +283,11 @@ class Volume(_message.Message):
         level: _builtins.float = ...,
         is_muted: _builtins.bool = ...,
     ) -> None: ...
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
     _ClearFieldArgType: _TypeAlias = _typing.Literal["is_muted", b"is_muted", "level", b"level"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
 Global___Volume: _TypeAlias = Volume  # noqa: Y015
 
@@ -250,30 +304,13 @@ class Power(_message.Message):
         *,
         is_on: _builtins.bool = ...,
     ) -> None: ...
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
     _ClearFieldArgType: _TypeAlias = _typing.Literal["is_on", b"is_on"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
 Global___Power: _TypeAlias = Power  # noqa: Y015
-
-class _ErrorCategory:
-    ValueType = _typing.NewType("ValueType", _builtins.int)
-    V: _TypeAlias = ValueType  # noqa: Y015
-
-class _ErrorCategoryEnumTypeWrapper(_enum_type_wrapper._EnumTypeWrapper[_ErrorCategory.ValueType], _builtins.type):
-    DESCRIPTOR: _descriptor.EnumDescriptor
-    ERROR_CATEGORY_UNSPECIFIED: _ErrorCategory.ValueType  # 0
-    DEVICE_UNAVAILABLE: _ErrorCategory.ValueType  # 1
-    COMMAND_REJECTED: _ErrorCategory.ValueType  # 2
-    INTERNAL: _ErrorCategory.ValueType  # 3
-
-class ErrorCategory(_ErrorCategory, metaclass=_ErrorCategoryEnumTypeWrapper):
-    """Categorizes a device failure so the OMOTE can surface or ignore it"""
-
-ERROR_CATEGORY_UNSPECIFIED: ErrorCategory.ValueType  # 0
-DEVICE_UNAVAILABLE: ErrorCategory.ValueType  # 1
-COMMAND_REJECTED: ErrorCategory.ValueType  # 2
-INTERNAL: ErrorCategory.ValueType  # 3
-Global___ErrorCategory: _TypeAlias = ErrorCategory  # noqa: Y015
 
 @_typing.final
 class Error(_message.Message):
@@ -285,14 +322,20 @@ class Error(_message.Message):
     CATEGORY_FIELD_NUMBER: _builtins.int
     message: _builtins.str
     category: Global___ErrorCategory.ValueType
+    """Classifies the failure; see ErrorCategory. Additive and back-compatible:
+    older clients ignore it and treat every error as "surface".
+    """
     def __init__(
         self,
         *,
         message: _builtins.str = ...,
         category: Global___ErrorCategory.ValueType = ...,
     ) -> None: ...
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
     _ClearFieldArgType: _TypeAlias = _typing.Literal["category", b"category", "message", b"message"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
 Global___Error: _TypeAlias = Error  # noqa: Y015
 
@@ -327,8 +370,11 @@ class Metadata(_message.Message):
         position: _builtins.int = ...,
         state: _builtins.str = ...,
     ) -> None: ...
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
     _ClearFieldArgType: _TypeAlias = _typing.Literal["album", b"album", "artist", b"artist", "duration", b"duration", "position", b"position", "state", b"state", "title", b"title"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
 Global___Metadata: _TypeAlias = Metadata  # noqa: Y015
 
@@ -350,6 +396,7 @@ class MediaPlayerState(_message.Message):
     def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
     _ClearFieldArgType: _TypeAlias = _typing.Literal["playback", b"playback"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
 Global___MediaPlayerState: _TypeAlias = MediaPlayerState  # noqa: Y015
 
@@ -371,8 +418,11 @@ class Time(_message.Message):
         timestamp: _builtins.int = ...,
         timezone_offset: _builtins.int = ...,
     ) -> None: ...
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
     _ClearFieldArgType: _TypeAlias = _typing.Literal["timestamp", b"timestamp", "timezone_offset", b"timezone_offset"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
 Global___Time: _TypeAlias = Time  # noqa: Y015
 
@@ -404,6 +454,7 @@ class DeviceState(_message.Message):
     def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
     _ClearFieldArgType: _TypeAlias = _typing.Literal["device_id", b"device_id", "is_on", b"is_on", "media_player", b"media_player", "volume", b"volume"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
 Global___DeviceState: _TypeAlias = DeviceState  # noqa: Y015
 
@@ -433,6 +484,7 @@ class StateSync(_message.Message):
     def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
     _ClearFieldArgType: _TypeAlias = _typing.Literal["devices", b"devices", "time", b"time"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
 Global___StateSync: _TypeAlias = StateSync  # noqa: Y015
 
@@ -470,8 +522,11 @@ class PairingStatus(_message.Message):
         expected_pin_length: _builtins.int = ...,
         context_token: _builtins.str = ...,
     ) -> None: ...
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
     _ClearFieldArgType: _TypeAlias = _typing.Literal["context_token", b"context_token", "device_id", b"device_id", "expected_pin_length", b"expected_pin_length", "message", b"message", "requires_pin", b"requires_pin", "step", b"step"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
 
 Global___PairingStatus: _TypeAlias = PairingStatus  # noqa: Y015
 

@@ -73,6 +73,23 @@ typedef enum _omote_ResponseKind {
     omote_ResponseKind_NONE = 7
 } omote_ResponseKind;
 
+/* Categorizes a device failure so the OMOTE can decide whether to surface it
+ to the user or silently ignore it, without string-parsing the message.
+ Mirrors google.rpc.Status / ucapi's IntegrationSetupError pattern. */
+typedef enum _omote_ErrorCategory {
+    /* Unset/unknown. Additive default; older clients see this and the OMOTE
+ treats it as "surface" (fail-safe). */
+    omote_ErrorCategory_ERROR_CATEGORY_UNSPECIFIED = 0,
+    /* Device unreachable: timeout, network failure, connection lost, or a
+ missing/garbled response. The OMOTE should surface this. */
+    omote_ErrorCategory_DEVICE_UNAVAILABLE = 1,
+    /* Expected command-level rejection: unsupported command, invalid input, or
+ device-rejected. The OMOTE may safely ignore it (e.g. an unmapped button). */
+    omote_ErrorCategory_COMMAND_REJECTED = 2,
+    /* Unexpected internal fault. The OMOTE should surface this. */
+    omote_ErrorCategory_INTERNAL = 3
+} omote_ErrorCategory;
+
 /* Struct definitions */
 typedef PB_BYTES_ARRAY_T(64) omote_RemoteEvent_data_t;
 PB_PACKED_STRUCT_START
@@ -123,6 +140,9 @@ PB_PACKED_STRUCT_START
 /* Error response */
 typedef struct _omote_Error {
     char message[128];
+    /* Classifies the failure; see ErrorCategory. Additive and back-compatible:
+ older clients ignore it and treat every error as "surface". */
+    omote_ErrorCategory category;
 } pb_packed omote_Error;
 PB_PACKED_STRUCT_END
 
@@ -236,12 +256,17 @@ extern "C" {
 #define _omote_ResponseKind_MAX omote_ResponseKind_NONE
 #define _omote_ResponseKind_ARRAYSIZE ((omote_ResponseKind)(omote_ResponseKind_NONE+1))
 
+#define _omote_ErrorCategory_MIN omote_ErrorCategory_ERROR_CATEGORY_UNSPECIFIED
+#define _omote_ErrorCategory_MAX omote_ErrorCategory_INTERNAL
+#define _omote_ErrorCategory_ARRAYSIZE ((omote_ErrorCategory)(omote_ErrorCategory_INTERNAL+1))
+
 #define omote_RemoteEvent_command_ENUMTYPE omote_OmoteCommand
 #define omote_RemoteEvent_type_ENUMTYPE omote_OmoteCommandType
 
 
 
 
+#define omote_Error_category_ENUMTYPE omote_ErrorCategory
 
 
 
@@ -257,7 +282,7 @@ extern "C" {
 #define omote_Ack_init_default                   {0}
 #define omote_Volume_init_default                {0, 0}
 #define omote_Power_init_default                 {0}
-#define omote_Error_init_default                 {""}
+#define omote_Error_init_default                 {"", _omote_ErrorCategory_MIN}
 #define omote_Metadata_init_default              {"", "", "", 0, 0, ""}
 #define omote_MediaPlayerState_init_default      {false, omote_Metadata_init_default}
 #define omote_Time_init_default                  {0, 0}
@@ -269,7 +294,7 @@ extern "C" {
 #define omote_Ack_init_zero                      {0}
 #define omote_Volume_init_zero                   {0, 0}
 #define omote_Power_init_zero                    {0}
-#define omote_Error_init_zero                    {""}
+#define omote_Error_init_zero                    {"", _omote_ErrorCategory_MIN}
 #define omote_Metadata_init_zero                 {"", "", "", 0, 0, ""}
 #define omote_MediaPlayerState_init_zero         {false, omote_Metadata_init_zero}
 #define omote_Time_init_zero                     {0, 0}
@@ -289,6 +314,7 @@ extern "C" {
 #define omote_Volume_is_muted_tag                2
 #define omote_Power_is_on_tag                    1
 #define omote_Error_message_tag                  1
+#define omote_Error_category_tag                 2
 #define omote_Metadata_title_tag                 1
 #define omote_Metadata_artist_tag                2
 #define omote_Metadata_album_tag                 3
@@ -346,7 +372,8 @@ X(a, STATIC,   SINGULAR, BOOL,     is_on,             1)
 #define omote_Power_DEFAULT NULL
 
 #define omote_Error_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, STRING,   message,           1)
+X(a, STATIC,   SINGULAR, STRING,   message,           1) \
+X(a, STATIC,   SINGULAR, UENUM,    category,          2)
 #define omote_Error_CALLBACK NULL
 #define omote_Error_DEFAULT NULL
 
@@ -449,7 +476,7 @@ extern const pb_msgdesc_t omote_CommandResult_msg;
 #define omote_Ack_size                           0
 #define omote_CommandResult_size                 2238
 #define omote_DeviceState_size                   274
-#define omote_Error_size                         130
+#define omote_Error_size                         132
 #define omote_MediaPlayerState_size              227
 #define omote_Metadata_size                      224
 #define omote_PairingStatus_size                 269
