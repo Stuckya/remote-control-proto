@@ -18,7 +18,6 @@ omote.Metadata.title max_size:64
 omote.Metadata.artist max_size:64
 omote.Metadata.album max_size:64
 omote.Metadata.state max_size:16
-omote.Metadata.media_type max_size:16
 omote.StateSync.devices max_count:8
 omote.DeviceState.device_id max_size:32
 omote.PairingStatus.device_id max_size:32

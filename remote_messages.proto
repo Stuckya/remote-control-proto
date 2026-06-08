@@ -139,6 +139,15 @@ message Error {
   ErrorCategory category = 2;
 }
 
+// Closed set mirroring pyatv's MediaType; UNSPECIFIED is the additive default so
+// unknown values and older clients degrade to "no media type", not a free string.
+enum MediaType {
+  MEDIA_TYPE_UNSPECIFIED = 0;
+  MEDIA_TYPE_VIDEO = 1;
+  MEDIA_TYPE_MUSIC = 2;
+  MEDIA_TYPE_TV = 3;
+}
+
 // Media metadata
 message Metadata {
   string title = 1;
@@ -154,9 +163,7 @@ message Metadata {
   // Playback state: "playing", "paused", "stopped", etc.
   string state = 6;
 
-  // Media type: "video", "music", "tv" (empty if unknown). Mirrors pyatv's
-  // MediaType; string keeps it additive and back-compatible like `state`.
-  string media_type = 7;
+  MediaType media_type = 7;
 }
 
 // Media player state for devices with playback capabilities

@@ -90,6 +90,15 @@ typedef enum _omote_ErrorCategory {
     omote_ErrorCategory_INTERNAL = 3
 } omote_ErrorCategory;
 
+/* Closed set mirroring pyatv's MediaType; UNSPECIFIED is the additive default so
+ unknown values and older clients degrade to "no media type", not a free string. */
+typedef enum _omote_MediaType {
+    omote_MediaType_MEDIA_TYPE_UNSPECIFIED = 0,
+    omote_MediaType_MEDIA_TYPE_VIDEO = 1,
+    omote_MediaType_MEDIA_TYPE_MUSIC = 2,
+    omote_MediaType_MEDIA_TYPE_TV = 3
+} omote_MediaType;
+
 /* Struct definitions */
 typedef PB_BYTES_ARRAY_T(64) omote_RemoteEvent_data_t;
 PB_PACKED_STRUCT_START
@@ -158,6 +167,7 @@ typedef struct _omote_Metadata {
     uint32_t position;
     /* Playback state: "playing", "paused", "stopped", etc. */
     char state[16];
+    omote_MediaType media_type;
 } pb_packed omote_Metadata;
 PB_PACKED_STRUCT_END
 
@@ -260,6 +270,10 @@ extern "C" {
 #define _omote_ErrorCategory_MAX omote_ErrorCategory_INTERNAL
 #define _omote_ErrorCategory_ARRAYSIZE ((omote_ErrorCategory)(omote_ErrorCategory_INTERNAL+1))
 
+#define _omote_MediaType_MIN omote_MediaType_MEDIA_TYPE_UNSPECIFIED
+#define _omote_MediaType_MAX omote_MediaType_MEDIA_TYPE_TV
+#define _omote_MediaType_ARRAYSIZE ((omote_MediaType)(omote_MediaType_MEDIA_TYPE_TV+1))
+
 #define omote_RemoteEvent_command_ENUMTYPE omote_OmoteCommand
 #define omote_RemoteEvent_type_ENUMTYPE omote_OmoteCommandType
 
@@ -268,6 +282,7 @@ extern "C" {
 
 #define omote_Error_category_ENUMTYPE omote_ErrorCategory
 
+#define omote_Metadata_media_type_ENUMTYPE omote_MediaType
 
 
 
@@ -283,7 +298,7 @@ extern "C" {
 #define omote_Volume_init_default                {0, 0}
 #define omote_Power_init_default                 {0}
 #define omote_Error_init_default                 {"", _omote_ErrorCategory_MIN}
-#define omote_Metadata_init_default              {"", "", "", 0, 0, ""}
+#define omote_Metadata_init_default              {"", "", "", 0, 0, "", _omote_MediaType_MIN}
 #define omote_MediaPlayerState_init_default      {false, omote_Metadata_init_default}
 #define omote_Time_init_default                  {0, 0}
 #define omote_DeviceState_init_default           {"", 0, false, omote_Volume_init_default, false, omote_MediaPlayerState_init_default}
@@ -295,7 +310,7 @@ extern "C" {
 #define omote_Volume_init_zero                   {0, 0}
 #define omote_Power_init_zero                    {0}
 #define omote_Error_init_zero                    {"", _omote_ErrorCategory_MIN}
-#define omote_Metadata_init_zero                 {"", "", "", 0, 0, ""}
+#define omote_Metadata_init_zero                 {"", "", "", 0, 0, "", _omote_MediaType_MIN}
 #define omote_MediaPlayerState_init_zero         {false, omote_Metadata_init_zero}
 #define omote_Time_init_zero                     {0, 0}
 #define omote_DeviceState_init_zero              {"", 0, false, omote_Volume_init_zero, false, omote_MediaPlayerState_init_zero}
@@ -321,6 +336,7 @@ extern "C" {
 #define omote_Metadata_duration_tag              4
 #define omote_Metadata_position_tag              5
 #define omote_Metadata_state_tag                 6
+#define omote_Metadata_media_type_tag            7
 #define omote_MediaPlayerState_playback_tag      1
 #define omote_Time_timestamp_tag                 1
 #define omote_Time_timezone_offset_tag           2
@@ -383,7 +399,8 @@ X(a, STATIC,   SINGULAR, STRING,   artist,            2) \
 X(a, STATIC,   SINGULAR, STRING,   album,             3) \
 X(a, STATIC,   SINGULAR, UINT32,   duration,          4) \
 X(a, STATIC,   SINGULAR, UINT32,   position,          5) \
-X(a, STATIC,   SINGULAR, STRING,   state,             6)
+X(a, STATIC,   SINGULAR, STRING,   state,             6) \
+X(a, STATIC,   SINGULAR, UENUM,    media_type,        7)
 #define omote_Metadata_CALLBACK NULL
 #define omote_Metadata_DEFAULT NULL
 
@@ -474,15 +491,15 @@ extern const pb_msgdesc_t omote_CommandResult_msg;
 /* Maximum encoded size of messages (where known) */
 #define OMOTE_REMOTE_MESSAGES_PB_H_MAX_SIZE      omote_CommandResult_size
 #define omote_Ack_size                           0
-#define omote_CommandResult_size                 2238
-#define omote_DeviceState_size                   274
+#define omote_CommandResult_size                 2254
+#define omote_DeviceState_size                   276
 #define omote_Error_size                         132
-#define omote_MediaPlayerState_size              227
-#define omote_Metadata_size                      224
+#define omote_MediaPlayerState_size              229
+#define omote_Metadata_size                      226
 #define omote_PairingStatus_size                 269
 #define omote_Power_size                         2
 #define omote_RemoteEvent_size                   145
-#define omote_StateSync_size                     2233
+#define omote_StateSync_size                     2249
 #define omote_Time_size                          15
 #define omote_Volume_size                        7
 

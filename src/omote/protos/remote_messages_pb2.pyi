@@ -200,6 +200,28 @@ INTERNAL: ErrorCategory.ValueType  # 3
 """Unexpected internal fault. The OMOTE should surface this."""
 Global___ErrorCategory: _TypeAlias = ErrorCategory  # noqa: Y015
 
+class _MediaType:
+    ValueType = _typing.NewType("ValueType", _builtins.int)
+    V: _TypeAlias = ValueType  # noqa: Y015
+
+class _MediaTypeEnumTypeWrapper(_enum_type_wrapper._EnumTypeWrapper[_MediaType.ValueType], _builtins.type):
+    DESCRIPTOR: _descriptor.EnumDescriptor
+    MEDIA_TYPE_UNSPECIFIED: _MediaType.ValueType  # 0
+    MEDIA_TYPE_VIDEO: _MediaType.ValueType  # 1
+    MEDIA_TYPE_MUSIC: _MediaType.ValueType  # 2
+    MEDIA_TYPE_TV: _MediaType.ValueType  # 3
+
+class MediaType(_MediaType, metaclass=_MediaTypeEnumTypeWrapper):
+    """Closed set mirroring pyatv's MediaType; UNSPECIFIED is the additive default so
+    unknown values and older clients degrade to "no media type", not a free string.
+    """
+
+MEDIA_TYPE_UNSPECIFIED: MediaType.ValueType  # 0
+MEDIA_TYPE_VIDEO: MediaType.ValueType  # 1
+MEDIA_TYPE_MUSIC: MediaType.ValueType  # 2
+MEDIA_TYPE_TV: MediaType.ValueType  # 3
+Global___MediaType: _TypeAlias = MediaType  # noqa: Y015
+
 @_typing.final
 class RemoteEvent(_message.Message):
     """Event sent from OMOTE remote to hub"""
@@ -361,10 +383,7 @@ class Metadata(_message.Message):
     """Current position in seconds"""
     state: _builtins.str
     """Playback state: "playing", "paused", "stopped", etc."""
-    media_type: _builtins.str
-    """Media type: "video", "music", "tv" (empty if unknown). Mirrors pyatv's
-    MediaType; string keeps it additive and back-compatible like `state`.
-    """
+    media_type: Global___MediaType.ValueType
     def __init__(
         self,
         *,
@@ -374,7 +393,7 @@ class Metadata(_message.Message):
         duration: _builtins.int = ...,
         position: _builtins.int = ...,
         state: _builtins.str = ...,
-        media_type: _builtins.str = ...,
+        media_type: Global___MediaType.ValueType = ...,
     ) -> None: ...
     _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
     def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
