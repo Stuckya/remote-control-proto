@@ -99,6 +99,18 @@ typedef enum _omote_MediaType {
     omote_MediaType_MEDIA_TYPE_TV = 3
 } omote_MediaType;
 
+/* Closed set of pairing-session steps mirroring the hub's PairingState;
+ UNSPECIFIED is the additive default so unset and unknown future values degrade
+ to "no step", not a free string. */
+typedef enum _omote_PairingStep {
+    omote_PairingStep_PAIRING_STEP_UNSPECIFIED = 0,
+    omote_PairingStep_PAIRING_STEP_IDLE = 1,
+    omote_PairingStep_PAIRING_STEP_AWAITING_PIN = 2,
+    omote_PairingStep_PAIRING_STEP_SUCCESS = 3,
+    omote_PairingStep_PAIRING_STEP_FAILED = 4,
+    omote_PairingStep_PAIRING_STEP_CANCELLED = 5
+} omote_PairingStep;
+
 /* Struct definitions */
 typedef PB_BYTES_ARRAY_T(64) omote_RemoteEvent_data_t;
 PB_PACKED_STRUCT_START
@@ -218,8 +230,7 @@ PB_PACKED_STRUCT_START
 typedef struct _omote_PairingStatus {
     /* Device identifier */
     char device_id[32];
-    /* Pairing step: "started", "awaiting_pin", "success", "failed", "cancelled" */
-    char step[32];
+    omote_PairingStep step;
     /* User-facing message (e.g., "Enter PIN shown on Apple TV") */
     char message[128];
     /* Whether a PIN is required for this step */
@@ -274,6 +285,10 @@ extern "C" {
 #define _omote_MediaType_MAX omote_MediaType_MEDIA_TYPE_TV
 #define _omote_MediaType_ARRAYSIZE ((omote_MediaType)(omote_MediaType_MEDIA_TYPE_TV+1))
 
+#define _omote_PairingStep_MIN omote_PairingStep_PAIRING_STEP_UNSPECIFIED
+#define _omote_PairingStep_MAX omote_PairingStep_PAIRING_STEP_CANCELLED
+#define _omote_PairingStep_ARRAYSIZE ((omote_PairingStep)(omote_PairingStep_PAIRING_STEP_CANCELLED+1))
+
 #define omote_RemoteEvent_command_ENUMTYPE omote_OmoteCommand
 #define omote_RemoteEvent_type_ENUMTYPE omote_OmoteCommandType
 
@@ -288,6 +303,7 @@ extern "C" {
 
 
 
+#define omote_PairingStatus_step_ENUMTYPE omote_PairingStep
 
 #define omote_CommandResult_kind_ENUMTYPE omote_ResponseKind
 
@@ -303,7 +319,7 @@ extern "C" {
 #define omote_Time_init_default                  {0, 0}
 #define omote_DeviceState_init_default           {"", 0, false, omote_Volume_init_default, false, omote_MediaPlayerState_init_default}
 #define omote_StateSync_init_default             {false, omote_Time_init_default, 0, {omote_DeviceState_init_default, omote_DeviceState_init_default, omote_DeviceState_init_default, omote_DeviceState_init_default, omote_DeviceState_init_default, omote_DeviceState_init_default, omote_DeviceState_init_default, omote_DeviceState_init_default}}
-#define omote_PairingStatus_init_default         {"", "", "", 0, 0, ""}
+#define omote_PairingStatus_init_default         {"", _omote_PairingStep_MIN, "", 0, 0, ""}
 #define omote_CommandResult_init_default         {_omote_ResponseKind_MIN, 0, {omote_Ack_init_default}}
 #define omote_RemoteEvent_init_zero              {"", _omote_OmoteCommand_MIN, _omote_OmoteCommandType_MIN, "", 0, {0, {0}}}
 #define omote_Ack_init_zero                      {0}
@@ -315,7 +331,7 @@ extern "C" {
 #define omote_Time_init_zero                     {0, 0}
 #define omote_DeviceState_init_zero              {"", 0, false, omote_Volume_init_zero, false, omote_MediaPlayerState_init_zero}
 #define omote_StateSync_init_zero                {false, omote_Time_init_zero, 0, {omote_DeviceState_init_zero, omote_DeviceState_init_zero, omote_DeviceState_init_zero, omote_DeviceState_init_zero, omote_DeviceState_init_zero, omote_DeviceState_init_zero, omote_DeviceState_init_zero, omote_DeviceState_init_zero}}
-#define omote_PairingStatus_init_zero            {"", "", "", 0, 0, ""}
+#define omote_PairingStatus_init_zero            {"", _omote_PairingStep_MIN, "", 0, 0, ""}
 #define omote_CommandResult_init_zero            {_omote_ResponseKind_MIN, 0, {omote_Ack_init_zero}}
 
 /* Field tags (for use in manual encoding/decoding) */
@@ -436,7 +452,7 @@ X(a, STATIC,   REPEATED, MESSAGE,  devices,           2)
 
 #define omote_PairingStatus_FIELDLIST(X, a) \
 X(a, STATIC,   SINGULAR, STRING,   device_id,         1) \
-X(a, STATIC,   SINGULAR, STRING,   step,              2) \
+X(a, STATIC,   SINGULAR, UENUM,    step,              2) \
 X(a, STATIC,   SINGULAR, STRING,   message,           3) \
 X(a, STATIC,   SINGULAR, BOOL,     requires_pin,      4) \
 X(a, STATIC,   SINGULAR, UINT32,   expected_pin_length,   5) \
@@ -496,7 +512,7 @@ extern const pb_msgdesc_t omote_CommandResult_msg;
 #define omote_Error_size                         132
 #define omote_MediaPlayerState_size              229
 #define omote_Metadata_size                      226
-#define omote_PairingStatus_size                 269
+#define omote_PairingStatus_size                 238
 #define omote_Power_size                         2
 #define omote_RemoteEvent_size                   145
 #define omote_StateSync_size                     2249
