@@ -351,6 +351,7 @@ class Metadata(_message.Message):
     DURATION_FIELD_NUMBER: _builtins.int
     POSITION_FIELD_NUMBER: _builtins.int
     STATE_FIELD_NUMBER: _builtins.int
+    MEDIA_TYPE_FIELD_NUMBER: _builtins.int
     title: _builtins.str
     artist: _builtins.str
     album: _builtins.str
@@ -360,6 +361,10 @@ class Metadata(_message.Message):
     """Current position in seconds"""
     state: _builtins.str
     """Playback state: "playing", "paused", "stopped", etc."""
+    media_type: _builtins.str
+    """Media type: "video", "music", "tv" (empty if unknown). Mirrors pyatv's
+    MediaType; string keeps it additive and back-compatible like `state`.
+    """
     def __init__(
         self,
         *,
@@ -369,10 +374,11 @@ class Metadata(_message.Message):
         duration: _builtins.int = ...,
         position: _builtins.int = ...,
         state: _builtins.str = ...,
+        media_type: _builtins.str = ...,
     ) -> None: ...
     _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
     def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
-    _ClearFieldArgType: _TypeAlias = _typing.Literal["album", b"album", "artist", b"artist", "duration", b"duration", "position", b"position", "state", b"state", "title", b"title"]  # noqa: Y015
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["album", b"album", "artist", b"artist", "duration", b"duration", "media_type", b"media_type", "position", b"position", "state", b"state", "title", b"title"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
     def WhichOneof(self, oneof_group: _Never) -> None: ...
 
