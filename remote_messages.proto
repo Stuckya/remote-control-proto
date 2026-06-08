@@ -197,13 +197,24 @@ message StateSync {
   repeated DeviceState devices = 2;
 }
 
+// Closed set of pairing-session steps mirroring the hub's PairingState;
+// UNSPECIFIED is the additive default so unset and unknown future values degrade
+// to "no step", not a free string.
+enum PairingStep {
+  PAIRING_STEP_UNSPECIFIED = 0;
+  PAIRING_STEP_IDLE = 1;
+  PAIRING_STEP_AWAITING_PIN = 2;
+  PAIRING_STEP_SUCCESS = 3;
+  PAIRING_STEP_FAILED = 4;
+  PAIRING_STEP_CANCELLED = 5;
+}
+
 // Pairing status response
 message PairingStatus {
   // Device identifier
   string device_id = 1;
 
-  // Pairing step: "started", "awaiting_pin", "success", "failed", "cancelled"
-  string step = 2;
+  PairingStep step = 2;
 
   // User-facing message (e.g., "Enter PIN shown on Apple TV")
   string message = 3;

@@ -222,6 +222,33 @@ MEDIA_TYPE_MUSIC: MediaType.ValueType  # 2
 MEDIA_TYPE_TV: MediaType.ValueType  # 3
 Global___MediaType: _TypeAlias = MediaType  # noqa: Y015
 
+class _PairingStep:
+    ValueType = _typing.NewType("ValueType", _builtins.int)
+    V: _TypeAlias = ValueType  # noqa: Y015
+
+class _PairingStepEnumTypeWrapper(_enum_type_wrapper._EnumTypeWrapper[_PairingStep.ValueType], _builtins.type):
+    DESCRIPTOR: _descriptor.EnumDescriptor
+    PAIRING_STEP_UNSPECIFIED: _PairingStep.ValueType  # 0
+    PAIRING_STEP_IDLE: _PairingStep.ValueType  # 1
+    PAIRING_STEP_AWAITING_PIN: _PairingStep.ValueType  # 2
+    PAIRING_STEP_SUCCESS: _PairingStep.ValueType  # 3
+    PAIRING_STEP_FAILED: _PairingStep.ValueType  # 4
+    PAIRING_STEP_CANCELLED: _PairingStep.ValueType  # 5
+
+class PairingStep(_PairingStep, metaclass=_PairingStepEnumTypeWrapper):
+    """Closed set of pairing-session steps mirroring the hub's PairingState;
+    UNSPECIFIED is the additive default so unset and unknown future values degrade
+    to "no step", not a free string.
+    """
+
+PAIRING_STEP_UNSPECIFIED: PairingStep.ValueType  # 0
+PAIRING_STEP_IDLE: PairingStep.ValueType  # 1
+PAIRING_STEP_AWAITING_PIN: PairingStep.ValueType  # 2
+PAIRING_STEP_SUCCESS: PairingStep.ValueType  # 3
+PAIRING_STEP_FAILED: PairingStep.ValueType  # 4
+PAIRING_STEP_CANCELLED: PairingStep.ValueType  # 5
+Global___PairingStep: _TypeAlias = PairingStep  # noqa: Y015
+
 @_typing.final
 class RemoteEvent(_message.Message):
     """Event sent from OMOTE remote to hub"""
@@ -527,8 +554,7 @@ class PairingStatus(_message.Message):
     CONTEXT_TOKEN_FIELD_NUMBER: _builtins.int
     device_id: _builtins.str
     """Device identifier"""
-    step: _builtins.str
-    """Pairing step: "started", "awaiting_pin", "success", "failed", "cancelled" """
+    step: Global___PairingStep.ValueType
     message: _builtins.str
     """User-facing message (e.g., "Enter PIN shown on Apple TV")"""
     requires_pin: _builtins.bool
@@ -541,7 +567,7 @@ class PairingStatus(_message.Message):
         self,
         *,
         device_id: _builtins.str = ...,
-        step: _builtins.str = ...,
+        step: Global___PairingStep.ValueType = ...,
         message: _builtins.str = ...,
         requires_pin: _builtins.bool = ...,
         expected_pin_length: _builtins.int = ...,
