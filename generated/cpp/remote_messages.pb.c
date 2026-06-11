@@ -39,7 +39,15 @@ PB_BIND(omote_StateSync, omote_StateSync, 2)
 PB_BIND(omote_PairingStatus, omote_PairingStatus, AUTO)
 
 
+PB_BIND(omote_DeviceInfo, omote_DeviceInfo, AUTO)
+
+
+PB_BIND(omote_DeviceList, omote_DeviceList, 2)
+
+
 PB_BIND(omote_CommandResult, omote_CommandResult, 2)
+
+
 
 
 

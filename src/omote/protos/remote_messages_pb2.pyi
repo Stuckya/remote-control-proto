@@ -82,6 +82,17 @@ class _OmoteCommandEnumTypeWrapper(_enum_type_wrapper._EnumTypeWrapper[_OmoteCom
     YELLOW: _OmoteCommand.ValueType  # 33
     BLUE: _OmoteCommand.ValueType  # 34
     GUI_EVENT: _OmoteCommand.ValueType  # 35
+    DEVICE_SCAN_START: _OmoteCommand.ValueType  # 36
+    """Device discovery and management (RemoteEvent.device carries the target id
+    where one applies)
+    hub runs a network scan (e.g. pyatv.scan())
+    """
+    DEVICE_SCAN_CANCEL: _OmoteCommand.ValueType  # 37
+    """abort an in-progress scan"""
+    DEVICE_FORGET: _OmoteCommand.ValueType  # 38
+    """delete stored credentials for RemoteEvent.device"""
+    LIST_DEVICES: _OmoteCommand.ValueType  # 39
+    """request paired devices from hub storage"""
 
 class OmoteCommand(_OmoteCommand, metaclass=_OmoteCommandEnumTypeWrapper):
     """Remote control commands
@@ -127,6 +138,17 @@ GREEN: OmoteCommand.ValueType  # 32
 YELLOW: OmoteCommand.ValueType  # 33
 BLUE: OmoteCommand.ValueType  # 34
 GUI_EVENT: OmoteCommand.ValueType  # 35
+DEVICE_SCAN_START: OmoteCommand.ValueType  # 36
+"""Device discovery and management (RemoteEvent.device carries the target id
+where one applies)
+hub runs a network scan (e.g. pyatv.scan())
+"""
+DEVICE_SCAN_CANCEL: OmoteCommand.ValueType  # 37
+"""abort an in-progress scan"""
+DEVICE_FORGET: OmoteCommand.ValueType  # 38
+"""delete stored credentials for RemoteEvent.device"""
+LIST_DEVICES: OmoteCommand.ValueType  # 39
+"""request paired devices from hub storage"""
 Global___OmoteCommand: _TypeAlias = OmoteCommand  # noqa: Y015
 
 class _ResponseKind:
@@ -143,6 +165,7 @@ class _ResponseKindEnumTypeWrapper(_enum_type_wrapper._EnumTypeWrapper[_Response
     STATE_SYNC: _ResponseKind.ValueType  # 5
     PAIRING: _ResponseKind.ValueType  # 6
     NONE: _ResponseKind.ValueType  # 7
+    DEVICE_LIST: _ResponseKind.ValueType  # 8
 
 class ResponseKind(_ResponseKind, metaclass=_ResponseKindEnumTypeWrapper):
     """Response kind for command results"""
@@ -155,6 +178,7 @@ ERROR: ResponseKind.ValueType  # 4
 STATE_SYNC: ResponseKind.ValueType  # 5
 PAIRING: ResponseKind.ValueType  # 6
 NONE: ResponseKind.ValueType  # 7
+DEVICE_LIST: ResponseKind.ValueType  # 8
 Global___ResponseKind: _TypeAlias = ResponseKind  # noqa: Y015
 
 class _ErrorCategory:
@@ -248,6 +272,33 @@ PAIRING_STEP_SUCCESS: PairingStep.ValueType  # 3
 PAIRING_STEP_FAILED: PairingStep.ValueType  # 4
 PAIRING_STEP_CANCELLED: PairingStep.ValueType  # 5
 Global___PairingStep: _TypeAlias = PairingStep  # noqa: Y015
+
+class _PairingRequirement:
+    ValueType = _typing.NewType("ValueType", _builtins.int)
+    V: _TypeAlias = ValueType  # noqa: Y015
+
+class _PairingRequirementEnumTypeWrapper(_enum_type_wrapper._EnumTypeWrapper[_PairingRequirement.ValueType], _builtins.type):
+    DESCRIPTOR: _descriptor.EnumDescriptor
+    PAIRING_REQUIREMENT_UNSPECIFIED: _PairingRequirement.ValueType  # 0
+    PAIRING_REQUIREMENT_UNSUPPORTED: _PairingRequirement.ValueType  # 1
+    PAIRING_REQUIREMENT_DISABLED: _PairingRequirement.ValueType  # 2
+    PAIRING_REQUIREMENT_NOT_NEEDED: _PairingRequirement.ValueType  # 3
+    PAIRING_REQUIREMENT_OPTIONAL: _PairingRequirement.ValueType  # 4
+    PAIRING_REQUIREMENT_MANDATORY: _PairingRequirement.ValueType  # 5
+
+class PairingRequirement(_PairingRequirement, metaclass=_PairingRequirementEnumTypeWrapper):
+    """Closed set mirroring pyatv's PairingRequirement; UNSPECIFIED is the additive
+    default so unset and unknown future values degrade to "unknown", letting the
+    UI fall back to a non-pairable row instead of guessing.
+    """
+
+PAIRING_REQUIREMENT_UNSPECIFIED: PairingRequirement.ValueType  # 0
+PAIRING_REQUIREMENT_UNSUPPORTED: PairingRequirement.ValueType  # 1
+PAIRING_REQUIREMENT_DISABLED: PairingRequirement.ValueType  # 2
+PAIRING_REQUIREMENT_NOT_NEEDED: PairingRequirement.ValueType  # 3
+PAIRING_REQUIREMENT_OPTIONAL: PairingRequirement.ValueType  # 4
+PAIRING_REQUIREMENT_MANDATORY: PairingRequirement.ValueType  # 5
+Global___PairingRequirement: _TypeAlias = PairingRequirement  # noqa: Y015
 
 @_typing.final
 class RemoteEvent(_message.Message):
@@ -582,6 +633,83 @@ class PairingStatus(_message.Message):
 Global___PairingStatus: _TypeAlias = PairingStatus  # noqa: Y015
 
 @_typing.final
+class DeviceInfo(_message.Message):
+    """A discovered or stored device. The hub truncates every string field to its
+    nanopb cap BEFORE encoding, so long real-world names/models/addresses can
+    never fail a scan result at the encode step.
+    """
+
+    DESCRIPTOR: _descriptor.Descriptor
+
+    DEVICE_ID_FIELD_NUMBER: _builtins.int
+    NAME_FIELD_NUMBER: _builtins.int
+    ADDRESS_FIELD_NUMBER: _builtins.int
+    MODEL_FIELD_NUMBER: _builtins.int
+    PAIRING_FIELD_NUMBER: _builtins.int
+    PAIRED_FIELD_NUMBER: _builtins.int
+    PAIRED_AT_FIELD_NUMBER: _builtins.int
+    device_id: _builtins.str
+    """Stable unique identifier (e.g. pyatv's identifier)"""
+    name: _builtins.str
+    address: _builtins.str
+    """IPv4 dotted-quad; the cap is sized for IPv4 only (intentional)"""
+    model: _builtins.str
+    """Model string for detail screens (e.g. "Apple TV 4K")"""
+    pairing: Global___PairingRequirement.ValueType
+    paired: _builtins.bool
+    """Whether the hub holds credentials for this device"""
+    paired_at: _builtins.int
+    """Unix epoch of when pairing completed; 0 = unknown"""
+    def __init__(
+        self,
+        *,
+        device_id: _builtins.str = ...,
+        name: _builtins.str = ...,
+        address: _builtins.str = ...,
+        model: _builtins.str = ...,
+        pairing: Global___PairingRequirement.ValueType = ...,
+        paired: _builtins.bool = ...,
+        paired_at: _builtins.int = ...,
+    ) -> None: ...
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["address", b"address", "device_id", b"device_id", "model", b"model", "name", b"name", "paired", b"paired", "paired_at", b"paired_at", "pairing", b"pairing"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
+
+Global___DeviceInfo: _TypeAlias = DeviceInfo  # noqa: Y015
+
+@_typing.final
+class DeviceList(_message.Message):
+    """Devices response: scan results (incremental or final) and stored-device
+    listings share this shape.
+    """
+
+    DESCRIPTOR: _descriptor.Descriptor
+
+    DEVICES_FIELD_NUMBER: _builtins.int
+    SCAN_COMPLETE_FIELD_NUMBER: _builtins.int
+    scan_complete: _builtins.bool
+    """True on the final result of a scan (distinguishes it from progress
+    updates); always true for LIST_DEVICES responses.
+    """
+    @_builtins.property
+    def devices(self) -> _containers.RepeatedCompositeFieldContainer[Global___DeviceInfo]: ...
+    def __init__(
+        self,
+        *,
+        devices: _abc.Iterable[Global___DeviceInfo] | None = ...,
+        scan_complete: _builtins.bool = ...,
+    ) -> None: ...
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["devices", b"devices", "scan_complete", b"scan_complete"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
+
+Global___DeviceList: _TypeAlias = DeviceList  # noqa: Y015
+
+@_typing.final
 class CommandResult(_message.Message):
     """Command result sent from hub to OMOTE remote"""
 
@@ -594,6 +722,7 @@ class CommandResult(_message.Message):
     ERROR_FIELD_NUMBER: _builtins.int
     STATE_SYNC_FIELD_NUMBER: _builtins.int
     PAIRING_FIELD_NUMBER: _builtins.int
+    DEVICE_LIST_FIELD_NUMBER: _builtins.int
     kind: Global___ResponseKind.ValueType
     """Response type"""
     @_builtins.property
@@ -608,6 +737,8 @@ class CommandResult(_message.Message):
     def state_sync(self) -> Global___StateSync: ...
     @_builtins.property
     def pairing(self) -> Global___PairingStatus: ...
+    @_builtins.property
+    def device_list(self) -> Global___DeviceList: ...
     def __init__(
         self,
         *,
@@ -618,12 +749,13 @@ class CommandResult(_message.Message):
         error: Global___Error | None = ...,
         state_sync: Global___StateSync | None = ...,
         pairing: Global___PairingStatus | None = ...,
+        device_list: Global___DeviceList | None = ...,
     ) -> None: ...
-    _HasFieldArgType: _TypeAlias = _typing.Literal["ack", b"ack", "data", b"data", "error", b"error", "pairing", b"pairing", "power", b"power", "state_sync", b"state_sync", "volume", b"volume"]  # noqa: Y015
+    _HasFieldArgType: _TypeAlias = _typing.Literal["ack", b"ack", "data", b"data", "device_list", b"device_list", "error", b"error", "pairing", b"pairing", "power", b"power", "state_sync", b"state_sync", "volume", b"volume"]  # noqa: Y015
     def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
-    _ClearFieldArgType: _TypeAlias = _typing.Literal["ack", b"ack", "data", b"data", "error", b"error", "kind", b"kind", "pairing", b"pairing", "power", b"power", "state_sync", b"state_sync", "volume", b"volume"]  # noqa: Y015
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["ack", b"ack", "data", b"data", "device_list", b"device_list", "error", b"error", "kind", b"kind", "pairing", b"pairing", "power", b"power", "state_sync", b"state_sync", "volume", b"volume"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
-    _WhichOneofReturnType_data: _TypeAlias = _typing.Literal["ack", "volume", "power", "error", "state_sync", "pairing"]  # noqa: Y015
+    _WhichOneofReturnType_data: _TypeAlias = _typing.Literal["ack", "volume", "power", "error", "state_sync", "pairing", "device_list"]  # noqa: Y015
     _WhichOneofArgType_data: _TypeAlias = _typing.Literal["data", b"data"]  # noqa: Y015
     def WhichOneof(self, oneof_group: _WhichOneofArgType_data) -> _WhichOneofReturnType_data | None: ...
 
