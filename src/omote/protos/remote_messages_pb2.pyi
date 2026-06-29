@@ -260,9 +260,10 @@ class _PairingStepEnumTypeWrapper(_enum_type_wrapper._EnumTypeWrapper[_PairingSt
     PAIRING_STEP_CANCELLED: _PairingStep.ValueType  # 5
 
 class PairingStep(_PairingStep, metaclass=_PairingStepEnumTypeWrapper):
-    """Closed set of pairing-session steps mirroring the hub's PairingState;
-    UNSPECIFIED is the additive default so unset and unknown future values degrade
-    to "no step", not a free string.
+    """Closed set of pairing-session steps mirroring the hub's PairingState. On hub
+    decode, unset and unknown future values degrade to FAILED — a visible pairing
+    failure rather than a silent no-step. The OMOTE firmware differs: it treats
+    UNSPECIFIED and unknown values like IDLE, deactivating the session silently.
     """
 
 PAIRING_STEP_UNSPECIFIED: PairingStep.ValueType  # 0

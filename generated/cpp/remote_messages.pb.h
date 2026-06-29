@@ -106,9 +106,10 @@ typedef enum _omote_MediaType {
     omote_MediaType_MEDIA_TYPE_TV = 3
 } omote_MediaType;
 
-/* Closed set of pairing-session steps mirroring the hub's PairingState;
- UNSPECIFIED is the additive default so unset and unknown future values degrade
- to "no step", not a free string. */
+/* Closed set of pairing-session steps mirroring the hub's PairingState. On hub
+ decode, unset and unknown future values degrade to FAILED — a visible pairing
+ failure rather than a silent no-step. The OMOTE firmware differs: it treats
+ UNSPECIFIED and unknown values like IDLE, deactivating the session silently. */
 typedef enum _omote_PairingStep {
     omote_PairingStep_PAIRING_STEP_UNSPECIFIED = 0,
     omote_PairingStep_PAIRING_STEP_IDLE = 1,
