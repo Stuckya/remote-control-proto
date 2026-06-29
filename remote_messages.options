@@ -24,3 +24,11 @@ omote.PairingStatus.device_id max_size:32
 omote.PairingStatus.message max_size:128
 omote.PairingStatus.context_token max_size:64
 
+# Device discovery - hub truncates fields to these caps before encoding.
+# address is IPv4-only by design ("255.255.255.255" + NUL = 16).
+omote.DeviceList.devices max_count:8
+omote.DeviceInfo.device_id max_size:40
+omote.DeviceInfo.name max_size:32
+omote.DeviceInfo.address max_size:16
+omote.DeviceInfo.model max_size:24
+

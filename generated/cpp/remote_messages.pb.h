@@ -58,7 +58,13 @@ typedef enum _omote_OmoteCommand {
     omote_OmoteCommand_GREEN = 32,
     omote_OmoteCommand_YELLOW = 33,
     omote_OmoteCommand_BLUE = 34,
-    omote_OmoteCommand_GUI_EVENT = 35
+    omote_OmoteCommand_GUI_EVENT = 35,
+    /* Device discovery and management (RemoteEvent.device carries the target id
+ where one applies) */
+    omote_OmoteCommand_DEVICE_SCAN_START = 36, /* hub runs a network scan (e.g. pyatv.scan()) */
+    omote_OmoteCommand_DEVICE_SCAN_CANCEL = 37, /* abort an in-progress scan */
+    omote_OmoteCommand_DEVICE_FORGET = 38, /* delete stored credentials for RemoteEvent.device */
+    omote_OmoteCommand_LIST_DEVICES = 39 /* request paired devices from hub storage */
 } omote_OmoteCommand;
 
 /* Response kind for command results */
@@ -70,7 +76,8 @@ typedef enum _omote_ResponseKind {
     omote_ResponseKind_ERROR = 4,
     omote_ResponseKind_STATE_SYNC = 5,
     omote_ResponseKind_PAIRING = 6,
-    omote_ResponseKind_NONE = 7
+    omote_ResponseKind_NONE = 7,
+    omote_ResponseKind_DEVICE_LIST = 8
 } omote_ResponseKind;
 
 /* Categorizes a device failure so the OMOTE can decide whether to surface it
@@ -110,6 +117,18 @@ typedef enum _omote_PairingStep {
     omote_PairingStep_PAIRING_STEP_FAILED = 4,
     omote_PairingStep_PAIRING_STEP_CANCELLED = 5
 } omote_PairingStep;
+
+/* Closed set mirroring pyatv's PairingRequirement; UNSPECIFIED is the additive
+ default so unset and unknown future values degrade to "unknown", letting the
+ UI fall back to a non-pairable row instead of guessing. */
+typedef enum _omote_PairingRequirement {
+    omote_PairingRequirement_PAIRING_REQUIREMENT_UNSPECIFIED = 0,
+    omote_PairingRequirement_PAIRING_REQUIREMENT_UNSUPPORTED = 1,
+    omote_PairingRequirement_PAIRING_REQUIREMENT_DISABLED = 2,
+    omote_PairingRequirement_PAIRING_REQUIREMENT_NOT_NEEDED = 3,
+    omote_PairingRequirement_PAIRING_REQUIREMENT_OPTIONAL = 4,
+    omote_PairingRequirement_PAIRING_REQUIREMENT_MANDATORY = 5
+} omote_PairingRequirement;
 
 /* Struct definitions */
 typedef PB_BYTES_ARRAY_T(64) omote_RemoteEvent_data_t;
@@ -243,6 +262,38 @@ typedef struct _omote_PairingStatus {
 PB_PACKED_STRUCT_END
 
 PB_PACKED_STRUCT_START
+/* A discovered or stored device. The hub truncates every string field to its
+ nanopb cap BEFORE encoding, so long real-world names/models/addresses can
+ never fail a scan result at the encode step. */
+typedef struct _omote_DeviceInfo {
+    /* Stable unique identifier (e.g. pyatv's identifier) */
+    char device_id[40];
+    char name[32];
+    /* IPv4 dotted-quad; the cap is sized for IPv4 only (intentional) */
+    char address[16];
+    /* Model string for detail screens (e.g. "Apple TV 4K") */
+    char model[24];
+    omote_PairingRequirement pairing;
+    /* Whether the hub holds credentials for this device */
+    bool paired;
+    /* Unix epoch of when pairing completed; 0 = unknown */
+    uint64_t paired_at;
+} pb_packed omote_DeviceInfo;
+PB_PACKED_STRUCT_END
+
+PB_PACKED_STRUCT_START
+/* Devices response: scan results (incremental or final) and stored-device
+ listings share this shape. */
+typedef struct _omote_DeviceList {
+    pb_size_t devices_count;
+    omote_DeviceInfo devices[8];
+    /* True on the final result of a scan (distinguishes it from progress
+ updates); always true for LIST_DEVICES responses. */
+    bool scan_complete;
+} pb_packed omote_DeviceList;
+PB_PACKED_STRUCT_END
+
+PB_PACKED_STRUCT_START
 /* Command result sent from hub to OMOTE remote */
 typedef struct _omote_CommandResult {
     /* Response type */
@@ -255,6 +306,7 @@ typedef struct _omote_CommandResult {
         omote_Error error;
         omote_StateSync state_sync;
         omote_PairingStatus pairing;
+        omote_DeviceList device_list;
     } data;
 } pb_packed omote_CommandResult;
 PB_PACKED_STRUCT_END
@@ -270,12 +322,12 @@ extern "C" {
 #define _omote_OmoteCommandType_ARRAYSIZE ((omote_OmoteCommandType)(omote_OmoteCommandType_LONG+1))
 
 #define _omote_OmoteCommand_MIN omote_OmoteCommand_OMOTE_COMMAND_UNSPECIFIED
-#define _omote_OmoteCommand_MAX omote_OmoteCommand_GUI_EVENT
-#define _omote_OmoteCommand_ARRAYSIZE ((omote_OmoteCommand)(omote_OmoteCommand_GUI_EVENT+1))
+#define _omote_OmoteCommand_MAX omote_OmoteCommand_LIST_DEVICES
+#define _omote_OmoteCommand_ARRAYSIZE ((omote_OmoteCommand)(omote_OmoteCommand_LIST_DEVICES+1))
 
 #define _omote_ResponseKind_MIN omote_ResponseKind_RESPONSE_KIND_UNSPECIFIED
-#define _omote_ResponseKind_MAX omote_ResponseKind_NONE
-#define _omote_ResponseKind_ARRAYSIZE ((omote_ResponseKind)(omote_ResponseKind_NONE+1))
+#define _omote_ResponseKind_MAX omote_ResponseKind_DEVICE_LIST
+#define _omote_ResponseKind_ARRAYSIZE ((omote_ResponseKind)(omote_ResponseKind_DEVICE_LIST+1))
 
 #define _omote_ErrorCategory_MIN omote_ErrorCategory_ERROR_CATEGORY_UNSPECIFIED
 #define _omote_ErrorCategory_MAX omote_ErrorCategory_INTERNAL
@@ -288,6 +340,10 @@ extern "C" {
 #define _omote_PairingStep_MIN omote_PairingStep_PAIRING_STEP_UNSPECIFIED
 #define _omote_PairingStep_MAX omote_PairingStep_PAIRING_STEP_CANCELLED
 #define _omote_PairingStep_ARRAYSIZE ((omote_PairingStep)(omote_PairingStep_PAIRING_STEP_CANCELLED+1))
+
+#define _omote_PairingRequirement_MIN omote_PairingRequirement_PAIRING_REQUIREMENT_UNSPECIFIED
+#define _omote_PairingRequirement_MAX omote_PairingRequirement_PAIRING_REQUIREMENT_MANDATORY
+#define _omote_PairingRequirement_ARRAYSIZE ((omote_PairingRequirement)(omote_PairingRequirement_PAIRING_REQUIREMENT_MANDATORY+1))
 
 #define omote_RemoteEvent_command_ENUMTYPE omote_OmoteCommand
 #define omote_RemoteEvent_type_ENUMTYPE omote_OmoteCommandType
@@ -305,6 +361,9 @@ extern "C" {
 
 #define omote_PairingStatus_step_ENUMTYPE omote_PairingStep
 
+#define omote_DeviceInfo_pairing_ENUMTYPE omote_PairingRequirement
+
+
 #define omote_CommandResult_kind_ENUMTYPE omote_ResponseKind
 
 
@@ -320,6 +379,8 @@ extern "C" {
 #define omote_DeviceState_init_default           {"", 0, false, omote_Volume_init_default, false, omote_MediaPlayerState_init_default}
 #define omote_StateSync_init_default             {false, omote_Time_init_default, 0, {omote_DeviceState_init_default, omote_DeviceState_init_default, omote_DeviceState_init_default, omote_DeviceState_init_default, omote_DeviceState_init_default, omote_DeviceState_init_default, omote_DeviceState_init_default, omote_DeviceState_init_default}}
 #define omote_PairingStatus_init_default         {"", _omote_PairingStep_MIN, "", 0, 0, ""}
+#define omote_DeviceInfo_init_default            {"", "", "", "", _omote_PairingRequirement_MIN, 0, 0}
+#define omote_DeviceList_init_default            {0, {omote_DeviceInfo_init_default, omote_DeviceInfo_init_default, omote_DeviceInfo_init_default, omote_DeviceInfo_init_default, omote_DeviceInfo_init_default, omote_DeviceInfo_init_default, omote_DeviceInfo_init_default, omote_DeviceInfo_init_default}, 0}
 #define omote_CommandResult_init_default         {_omote_ResponseKind_MIN, 0, {omote_Ack_init_default}}
 #define omote_RemoteEvent_init_zero              {"", _omote_OmoteCommand_MIN, _omote_OmoteCommandType_MIN, "", 0, {0, {0}}}
 #define omote_Ack_init_zero                      {0}
@@ -332,6 +393,8 @@ extern "C" {
 #define omote_DeviceState_init_zero              {"", 0, false, omote_Volume_init_zero, false, omote_MediaPlayerState_init_zero}
 #define omote_StateSync_init_zero                {false, omote_Time_init_zero, 0, {omote_DeviceState_init_zero, omote_DeviceState_init_zero, omote_DeviceState_init_zero, omote_DeviceState_init_zero, omote_DeviceState_init_zero, omote_DeviceState_init_zero, omote_DeviceState_init_zero, omote_DeviceState_init_zero}}
 #define omote_PairingStatus_init_zero            {"", _omote_PairingStep_MIN, "", 0, 0, ""}
+#define omote_DeviceInfo_init_zero               {"", "", "", "", _omote_PairingRequirement_MIN, 0, 0}
+#define omote_DeviceList_init_zero               {0, {omote_DeviceInfo_init_zero, omote_DeviceInfo_init_zero, omote_DeviceInfo_init_zero, omote_DeviceInfo_init_zero, omote_DeviceInfo_init_zero, omote_DeviceInfo_init_zero, omote_DeviceInfo_init_zero, omote_DeviceInfo_init_zero}, 0}
 #define omote_CommandResult_init_zero            {_omote_ResponseKind_MIN, 0, {omote_Ack_init_zero}}
 
 /* Field tags (for use in manual encoding/decoding) */
@@ -368,6 +431,15 @@ extern "C" {
 #define omote_PairingStatus_requires_pin_tag     4
 #define omote_PairingStatus_expected_pin_length_tag 5
 #define omote_PairingStatus_context_token_tag    6
+#define omote_DeviceInfo_device_id_tag           1
+#define omote_DeviceInfo_name_tag                2
+#define omote_DeviceInfo_address_tag             3
+#define omote_DeviceInfo_model_tag               4
+#define omote_DeviceInfo_pairing_tag             5
+#define omote_DeviceInfo_paired_tag              6
+#define omote_DeviceInfo_paired_at_tag           7
+#define omote_DeviceList_devices_tag             1
+#define omote_DeviceList_scan_complete_tag       2
 #define omote_CommandResult_kind_tag             1
 #define omote_CommandResult_ack_tag              10
 #define omote_CommandResult_volume_tag           11
@@ -375,6 +447,7 @@ extern "C" {
 #define omote_CommandResult_error_tag            13
 #define omote_CommandResult_state_sync_tag       14
 #define omote_CommandResult_pairing_tag          15
+#define omote_CommandResult_device_list_tag      16
 
 /* Struct field encoding specification for nanopb */
 #define omote_RemoteEvent_FIELDLIST(X, a) \
@@ -460,6 +533,24 @@ X(a, STATIC,   SINGULAR, STRING,   context_token,     6)
 #define omote_PairingStatus_CALLBACK NULL
 #define omote_PairingStatus_DEFAULT NULL
 
+#define omote_DeviceInfo_FIELDLIST(X, a) \
+X(a, STATIC,   SINGULAR, STRING,   device_id,         1) \
+X(a, STATIC,   SINGULAR, STRING,   name,              2) \
+X(a, STATIC,   SINGULAR, STRING,   address,           3) \
+X(a, STATIC,   SINGULAR, STRING,   model,             4) \
+X(a, STATIC,   SINGULAR, UENUM,    pairing,           5) \
+X(a, STATIC,   SINGULAR, BOOL,     paired,            6) \
+X(a, STATIC,   SINGULAR, FIXED64,  paired_at,         7)
+#define omote_DeviceInfo_CALLBACK NULL
+#define omote_DeviceInfo_DEFAULT NULL
+
+#define omote_DeviceList_FIELDLIST(X, a) \
+X(a, STATIC,   REPEATED, MESSAGE,  devices,           1) \
+X(a, STATIC,   SINGULAR, BOOL,     scan_complete,     2)
+#define omote_DeviceList_CALLBACK NULL
+#define omote_DeviceList_DEFAULT NULL
+#define omote_DeviceList_devices_MSGTYPE omote_DeviceInfo
+
 #define omote_CommandResult_FIELDLIST(X, a) \
 X(a, STATIC,   SINGULAR, UENUM,    kind,              1) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (data,ack,data.ack),  10) \
@@ -467,7 +558,8 @@ X(a, STATIC,   ONEOF,    MESSAGE,  (data,volume,data.volume),  11) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (data,power,data.power),  12) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (data,error,data.error),  13) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (data,state_sync,data.state_sync),  14) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (data,pairing,data.pairing),  15)
+X(a, STATIC,   ONEOF,    MESSAGE,  (data,pairing,data.pairing),  15) \
+X(a, STATIC,   ONEOF,    MESSAGE,  (data,device_list,data.device_list),  16)
 #define omote_CommandResult_CALLBACK NULL
 #define omote_CommandResult_DEFAULT NULL
 #define omote_CommandResult_data_ack_MSGTYPE omote_Ack
@@ -476,6 +568,7 @@ X(a, STATIC,   ONEOF,    MESSAGE,  (data,pairing,data.pairing),  15)
 #define omote_CommandResult_data_error_MSGTYPE omote_Error
 #define omote_CommandResult_data_state_sync_MSGTYPE omote_StateSync
 #define omote_CommandResult_data_pairing_MSGTYPE omote_PairingStatus
+#define omote_CommandResult_data_device_list_MSGTYPE omote_DeviceList
 
 extern const pb_msgdesc_t omote_RemoteEvent_msg;
 extern const pb_msgdesc_t omote_Ack_msg;
@@ -488,6 +581,8 @@ extern const pb_msgdesc_t omote_Time_msg;
 extern const pb_msgdesc_t omote_DeviceState_msg;
 extern const pb_msgdesc_t omote_StateSync_msg;
 extern const pb_msgdesc_t omote_PairingStatus_msg;
+extern const pb_msgdesc_t omote_DeviceInfo_msg;
+extern const pb_msgdesc_t omote_DeviceList_msg;
 extern const pb_msgdesc_t omote_CommandResult_msg;
 
 /* Defines for backwards compatibility with code written before nanopb-0.4.0 */
@@ -502,12 +597,16 @@ extern const pb_msgdesc_t omote_CommandResult_msg;
 #define omote_DeviceState_fields &omote_DeviceState_msg
 #define omote_StateSync_fields &omote_StateSync_msg
 #define omote_PairingStatus_fields &omote_PairingStatus_msg
+#define omote_DeviceInfo_fields &omote_DeviceInfo_msg
+#define omote_DeviceList_fields &omote_DeviceList_msg
 #define omote_CommandResult_fields &omote_CommandResult_msg
 
 /* Maximum encoded size of messages (where known) */
 #define OMOTE_REMOTE_MESSAGES_PB_H_MAX_SIZE      omote_CommandResult_size
 #define omote_Ack_size                           0
 #define omote_CommandResult_size                 2254
+#define omote_DeviceInfo_size                    129
+#define omote_DeviceList_size                    1058
 #define omote_DeviceState_size                   276
 #define omote_Error_size                         132
 #define omote_MediaPlayerState_size              229

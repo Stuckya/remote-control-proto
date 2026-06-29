@@ -54,6 +54,13 @@ enum OmoteCommand {
   YELLOW = 33;
   BLUE = 34;
   GUI_EVENT = 35;
+
+  // Device discovery and management (RemoteEvent.device carries the target id
+  // where one applies)
+  DEVICE_SCAN_START = 36;   // hub runs a network scan (e.g. pyatv.scan())
+  DEVICE_SCAN_CANCEL = 37;  // abort an in-progress scan
+  DEVICE_FORGET = 38;       // delete stored credentials for RemoteEvent.device
+  LIST_DEVICES = 39;        // request paired devices from hub storage
 }
 
 // Event sent from OMOTE remote to hub
@@ -89,6 +96,7 @@ enum ResponseKind {
   STATE_SYNC = 5;
   PAIRING = 6;
   NONE = 7;
+  DEVICE_LIST = 8;
 }
 
 // Acknowledgment response (empty)
@@ -229,6 +237,52 @@ message PairingStatus {
   string context_token = 6;
 }
 
+// Closed set mirroring pyatv's PairingRequirement; UNSPECIFIED is the additive
+// default so unset and unknown future values degrade to "unknown", letting the
+// UI fall back to a non-pairable row instead of guessing.
+enum PairingRequirement {
+  PAIRING_REQUIREMENT_UNSPECIFIED = 0;
+  PAIRING_REQUIREMENT_UNSUPPORTED = 1;
+  PAIRING_REQUIREMENT_DISABLED = 2;
+  PAIRING_REQUIREMENT_NOT_NEEDED = 3;
+  PAIRING_REQUIREMENT_OPTIONAL = 4;
+  PAIRING_REQUIREMENT_MANDATORY = 5;
+}
+
+// A discovered or stored device. The hub truncates every string field to its
+// nanopb cap BEFORE encoding, so long real-world names/models/addresses can
+// never fail a scan result at the encode step.
+message DeviceInfo {
+  // Stable unique identifier (e.g. pyatv's identifier)
+  string device_id = 1;
+
+  string name = 2;
+
+  // IPv4 dotted-quad; the cap is sized for IPv4 only (intentional)
+  string address = 3;
+
+  // Model string for detail screens (e.g. "Apple TV 4K")
+  string model = 4;
+
+  PairingRequirement pairing = 5;
+
+  // Whether the hub holds credentials for this device
+  bool paired = 6;
+
+  // Unix epoch of when pairing completed; 0 = unknown
+  fixed64 paired_at = 7;
+}
+
+// Devices response: scan results (incremental or final) and stored-device
+// listings share this shape.
+message DeviceList {
+  repeated DeviceInfo devices = 1;
+
+  // True on the final result of a scan (distinguishes it from progress
+  // updates); always true for LIST_DEVICES responses.
+  bool scan_complete = 2;
+}
+
 // Command result sent from hub to OMOTE remote
 message CommandResult {
   // Response type
@@ -242,5 +296,6 @@ message CommandResult {
     Error error = 13;
     StateSync state_sync = 14;
     PairingStatus pairing = 15;
+    DeviceList device_list = 16;
   }
 }
