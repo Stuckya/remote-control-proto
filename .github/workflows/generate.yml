@@ -8,24 +8,41 @@ on:
 permissions:
   contents: write
 
+env:
+  # Pin the whole codegen toolchain so generated output is byte-deterministic.
+  # The hub commits the generated _pb2.py/.pyi, so unpinned tooling made them
+  # drift on every CI runner refresh. Bump these deliberately (and regenerate),
+  # never let the runner's "latest" float the output. Keep PROTOC_VERSION's
+  # major in step with the protobuf runtime pinned in pyproject.toml.
+  PROTOC_VERSION: "25.1"
+  GRPCIO_TOOLS_VERSION: "1.59.3"
+  MYPY_PROTOBUF_VERSION: "3.6.0"
+  NANOPB_VERSION: "0.4.8"
+
 jobs:
   generate:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install protoc
+      - name: Install protoc (pinned)
         run: |
-          sudo apt-get update
-          sudo apt-get install -y protobuf-compiler
+          curl -sSL -o /tmp/protoc.zip \
+            "https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-linux-x86_64.zip"
+          sudo unzip -o /tmp/protoc.zip -d /usr/local bin/protoc 'include/*'
+          protoc --version
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
-      - name: Install Python protobuf tools
-        run: pip install grpcio-tools mypy-protobuf
+      - name: Install Python protobuf tools (pinned)
+        run: |
+          pip install \
+            "grpcio-tools==${GRPCIO_TOOLS_VERSION}" \
+            "mypy-protobuf==${MYPY_PROTOBUF_VERSION}" \
+            "nanopb==${NANOPB_VERSION}"
 
       - name: Generate Python code
         run: |
@@ -34,9 +51,6 @@ jobs:
             --python_out=src/omote/protos \
             --mypy_out=src/omote/protos \
             remote_messages.proto
-
-      - name: Install nanopb
-        run: pip install nanopb
 
       - name: Generate C++ (nanopb) code
         run: |
@@ -47,6 +61,14 @@ jobs:
             --plugin=protoc-gen-nanopb="${NANOPB_DIR}/generator/protoc-gen-nanopb" \
             --nanopb_out=generated/cpp \
             remote_messages.proto
+
+      - name: Verify generated code is up to date (PR)
+        if: github.event_name == 'pull_request'
+        run: |
+          if ! git diff --exit-code -- src/omote generated/; then
+            echo "::error::Generated code is out of date. Regenerate with the pinned toolchain and commit src/omote + generated/."
+            exit 1
+          fi
 
       - name: Commit generated code
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
