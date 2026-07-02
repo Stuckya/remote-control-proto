@@ -190,9 +190,14 @@ message Time {
 
 // Device state for sync responses
 message DeviceState {
+  // Field 3 (Volume volume) was removed as never-populated: no hub driver
+  // observes volume, so the field never carried data. Reserved against
+  // accidental reuse with different semantics; delete the reservation if a
+  // driver starts observing volume for state sync.
+  reserved 3;
+
   string device_id = 1;
   bool is_on = 2;
-  Volume volume = 3;
   MediaPlayerState media_player = 4;
 }
 
