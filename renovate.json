@@ -1,12 +1,13 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:recommended", "helpers:pinGitHubActionDigests"],
-  "packageRules": [
-    {
-      "groupName": "codegen toolchain",
-      "matchFileNames": ["requirements-codegen.txt", "buf.gen.yaml", ".github/workflows/*.yml"]
-    }
+  "extends": [
+    "config:recommended",
+    "helpers:pinGitHubActionDigests",
+    "group:all",
+    "schedule:weekly"
   ],
+  "timezone": "America/Indiana/Indianapolis",
+  "dependencyDashboard": true,
   "customManagers": [
     {
       "customType": "regex",
