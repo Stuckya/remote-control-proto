@@ -146,8 +146,6 @@ message Error {
   // older clients ignore it and treat every error as "surface".
   ErrorCategory category = 2;
 
-  // The device the error is about (same id as RemoteEvent.device), so the OMOTE
-  // can name it; empty for hub-level errors. Additive: older clients ignore it.
   string device_id = 3;
 }
 
