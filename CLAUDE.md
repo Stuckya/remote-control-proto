@@ -14,4 +14,7 @@ Types: feat, fix, chore, refactor, docs
 
 ## Code Generation
 
-Generated code lives in `generated/` (Python + C++/NanoPB). The GitHub Actions workflow regenerates on push to `main`.
+Generated code is committed (`src/omote/protos/` Python + stubs, `generated/cpp/` nanopb) and
+produced by `buf generate` with the toolchain pinned in `buf.gen.yaml` / `requirements-codegen.txt`.
+After editing the schema: `make tools` once, then `make generate`, and commit the output. CI only
+verifies (`make check`, `buf lint`, `buf breaking` against `main`); it never commits.

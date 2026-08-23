@@ -1,0 +1,10 @@
+version: v2
+plugins:
+  # Python gencode version must not exceed the hub's protobuf runtime (uv.lock).
+  - remote: buf.build/protocolbuffers/python:v35.1
+    out: src/omote/protos
+  - remote: buf.build/community/nipunn1313-mypy:v5.1.0
+    out: src/omote/protos
+  # nanopb has no remote plugin; installed from requirements-codegen.txt.
+  - local: protoc-gen-nanopb
+    out: generated/cpp

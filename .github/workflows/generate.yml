@@ -1,4 +1,4 @@
-name: Generate Protobuf Code
+name: Schema
 
 on:
   push:
@@ -6,79 +6,35 @@ on:
   pull_request:
 
 permissions:
-  contents: write
-
-env:
-  # Pin the whole codegen toolchain so generated output is byte-deterministic.
-  # The hub commits the generated _pb2.py/.pyi, so unpinned tooling made them
-  # drift on every CI runner refresh. Bump these deliberately (and regenerate),
-  # never let the runner's "latest" float the output. Keep PROTOC_VERSION's
-  # major in step with the protobuf runtime pinned in pyproject.toml.
-  PROTOC_VERSION: "25.1"
-  GRPCIO_TOOLS_VERSION: "1.59.3"
-  MYPY_PROTOBUF_VERSION: "3.6.0"
-  NANOPB_VERSION: "0.4.8"
+  contents: read
+  pull-requests: write
 
 jobs:
-  generate:
+  check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Install protoc (pinned)
-        run: |
-          curl -sSL -o /tmp/protoc.zip \
-            "https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-linux-x86_64.zip"
-          sudo unzip -o /tmp/protoc.zip -d /usr/local bin/protoc 'include/*'
-          protoc --version
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          python-version: "3.11"
+          fetch-depth: 0
 
-      - name: Install Python protobuf tools (pinned)
-        run: |
-          pip install \
-            "grpcio-tools==${GRPCIO_TOOLS_VERSION}" \
-            "mypy-protobuf==${MYPY_PROTOBUF_VERSION}" \
-            "nanopb==${NANOPB_VERSION}"
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
 
-      - name: Generate Python code
-        run: |
-          protoc \
-            --proto_path=. \
-            --python_out=src/omote/protos \
-            --mypy_out=src/omote/protos \
-            remote_messages.proto
+      - name: Install local codegen plugins (hash-pinned)
+        run: pip install --require-hashes -r requirements-codegen.txt
 
-      - name: Generate C++ (nanopb) code
-        run: |
-          mkdir -p generated/cpp
-          NANOPB_DIR=$(python -c "import nanopb; import os; print(os.path.dirname(nanopb.__file__))")
-          protoc \
-            --proto_path=. \
-            --plugin=protoc-gen-nanopb="${NANOPB_DIR}/generator/protoc-gen-nanopb" \
-            --nanopb_out=generated/cpp \
-            remote_messages.proto
+      # Lint, format, and breaking-change checks against the PR base; never
+      # pushes to the BSR.
+      - uses: bufbuild/buf-action@8c6a16e16f12ba20b6470afa9c2ba9b5ba8c97c3 # v1.5.0
+        with:
+          version: "1.72.0" # buf
+          push: false
+          archive: false
 
-      - name: Verify generated code is up to date (PR)
-        if: github.event_name == 'pull_request'
+      # Generated code is committed; it must match what the pinned toolchain
+      # produces from the schema in this revision.
+      - name: Generate and verify committed code
         run: |
-          if ! git diff --exit-code -- src/omote generated/; then
-            echo "::error::Generated code is out of date. Regenerate with the pinned toolchain and commit src/omote + generated/."
-            exit 1
-          fi
-
-      - name: Commit generated code
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add src/omote/ generated/
-          if git diff --cached --quiet; then
-            echo "No changes to commit"
-          else
-            git commit -m "chore: regenerates protobuf code from schema."
-            git push
-          fi
+          buf generate
+          git diff --exit-code -- src/omote generated

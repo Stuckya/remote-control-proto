@@ -1,0 +1,16 @@
+version: v2
+modules:
+  - path: .
+lint:
+  use:
+    - STANDARD
+  except:
+    # Enum values and the package name are baked into every generated symbol the
+    # hub and firmware reference (omote_OmoteCommand_POWER_ON, pb.POWER_ON);
+    # renaming them is a consumer-wide rewrite for no wire benefit.
+    - ENUM_VALUE_PREFIX
+    - PACKAGE_DIRECTORY_MATCH
+    - PACKAGE_VERSION_SUFFIX
+breaking:
+  use:
+    - FILE
