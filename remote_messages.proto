@@ -57,10 +57,10 @@ enum OmoteCommand {
 
   // Device discovery and management (RemoteEvent.device carries the target id
   // where one applies)
-  DEVICE_SCAN_START = 36;   // hub runs a network scan (e.g. pyatv.scan())
-  DEVICE_SCAN_CANCEL = 37;  // abort an in-progress scan
-  DEVICE_FORGET = 38;       // delete stored credentials for RemoteEvent.device
-  LIST_DEVICES = 39;        // request paired devices from hub storage
+  DEVICE_SCAN_START = 36; // hub runs a network scan (e.g. pyatv.scan())
+  DEVICE_SCAN_CANCEL = 37; // abort an in-progress scan
+  DEVICE_FORGET = 38; // delete stored credentials for RemoteEvent.device
+  LIST_DEVICES = 39; // request paired devices from hub storage
 }
 
 // Event sent from OMOTE remote to hub

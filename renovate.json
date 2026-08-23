@@ -1,0 +1,34 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    "helpers:pinGitHubActionDigests",
+    "group:all",
+    "schedule:weekly"
+  ],
+  "timezone": "America/Indiana/Indianapolis",
+  "dependencyDashboard": true,
+  "customManagers": [
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/^buf\\.gen\\.yaml$/"],
+      "matchStrings": ["remote: buf\\.build/protocolbuffers/python:(?<currentValue>v[0-9.]+)"],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "protocolbuffers/protobuf"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/^buf\\.gen\\.yaml$/"],
+      "matchStrings": ["remote: buf\\.build/community/nipunn1313-mypy:v(?<currentValue>[0-9.]+)"],
+      "datasourceTemplate": "pypi",
+      "depNameTemplate": "mypy-protobuf"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/^\\.github/workflows/.+\\.yml$/"],
+      "matchStrings": ["version: \"?(?<currentValue>[0-9.]+)\"? # buf"],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "bufbuild/buf"
+    }
+  ]
+}
