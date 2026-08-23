@@ -6,6 +6,9 @@
 #error Regenerate this file with the current version of nanopb generator.
 #endif
 
+PB_BIND(omote_SleepTimerRequest, omote_SleepTimerRequest, AUTO)
+
+
 PB_BIND(omote_RemoteEvent, omote_RemoteEvent, AUTO)
 
 
@@ -33,6 +36,9 @@ PB_BIND(omote_Time, omote_Time, AUTO)
 PB_BIND(omote_DeviceState, omote_DeviceState, 2)
 
 
+PB_BIND(omote_SleepTimerStatus, omote_SleepTimerStatus, AUTO)
+
+
 PB_BIND(omote_StateSync, omote_StateSync, 2)
 
 
@@ -46,6 +52,8 @@ PB_BIND(omote_DeviceList, omote_DeviceList, 2)
 
 
 PB_BIND(omote_CommandResult, omote_CommandResult, 2)
+
+
 
 
 

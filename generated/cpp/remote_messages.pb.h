@@ -64,7 +64,13 @@ typedef enum _omote_OmoteCommand {
     omote_OmoteCommand_DEVICE_SCAN_START = 36, /* hub runs a network scan (e.g. pyatv.scan()) */
     omote_OmoteCommand_DEVICE_SCAN_CANCEL = 37, /* abort an in-progress scan */
     omote_OmoteCommand_DEVICE_FORGET = 38, /* delete stored credentials for RemoteEvent.device */
-    omote_OmoteCommand_LIST_DEVICES = 39 /* request paired devices from hub storage */
+    omote_OmoteCommand_LIST_DEVICES = 39, /* request paired devices from hub storage */
+    /* Sleep timer (addressed to the hub, not a device). The hub owns the
+ countdown because the OMOTE deep-sleeps; SET and EXTEND carry
+ SleepTimerRequest. */
+    omote_OmoteCommand_SLEEP_TIMER_SET = 40,
+    omote_OmoteCommand_SLEEP_TIMER_EXTEND = 41,
+    omote_OmoteCommand_SLEEP_TIMER_CANCEL = 42
 } omote_OmoteCommand;
 
 /* Response kind for command results */
@@ -106,6 +112,23 @@ typedef enum _omote_MediaType {
     omote_MediaType_MEDIA_TYPE_TV = 3
 } omote_MediaType;
 
+/* Where the hub's sleep-timer countdown stands. IDLE is sent explicitly on
+ cancel and after firing: StateSync is a change feed, so an absent
+ SleepTimerStatus means "no news about the timer", never "no timer". */
+typedef enum _omote_SleepTimerStage {
+    omote_SleepTimerStage_SLEEP_TIMER_STAGE_UNSPECIFIED = 0,
+    omote_SleepTimerStage_SLEEP_TIMER_STAGE_IDLE = 1,
+    omote_SleepTimerStage_SLEEP_TIMER_STAGE_ARMED = 2,
+    /* Inside the final minute before firing. */
+    omote_SleepTimerStage_SLEEP_TIMER_STAGE_WARNING = 3,
+    /* Momentary: the hub is powering off every device it observes as on. The
+ next status is IDLE, so a remote that wakes long afterwards never replays
+ it. The OMOTE names the affected devices from the per-device state it
+ already mirrors; sending them here would push a single-device StateSync
+ past what the MQTT and ESP-NOW transports can carry. */
+    omote_SleepTimerStage_SLEEP_TIMER_STAGE_FIRED = 4
+} omote_SleepTimerStage;
+
 /* Closed set of pairing-session steps mirroring the hub's PairingState. On hub
  decode, unset and unknown future values degrade to FAILED — a visible pairing
  failure rather than a silent no-step. The OMOTE firmware differs: it treats
@@ -132,6 +155,15 @@ typedef enum _omote_PairingRequirement {
 } omote_PairingRequirement;
 
 /* Struct definitions */
+PB_PACKED_STRUCT_START
+/* Duration for SLEEP_TIMER_SET (the whole countdown) and SLEEP_TIMER_EXTEND
+ (added to whatever the hub has left). The hub clamps to its accepted range
+ and answers an out-of-range value with the clamped timer, never an error. */
+typedef struct _omote_SleepTimerRequest {
+    uint32_t minutes;
+} pb_packed omote_SleepTimerRequest;
+PB_PACKED_STRUCT_END
+
 typedef PB_BYTES_ARRAY_T(64) omote_RemoteEvent_data_t;
 PB_PACKED_STRUCT_START
 /* Event sent from OMOTE remote to hub */
@@ -150,6 +182,9 @@ typedef struct _omote_RemoteEvent {
     /* Optional additional data (escape hatch for custom payloads)
  Limited to 32 bytes for ESP-NOW compatibility */
     omote_RemoteEvent_data_t data;
+    /* Set only for SLEEP_TIMER_SET and SLEEP_TIMER_EXTEND */
+    bool has_sleep_timer;
+    omote_SleepTimerRequest sleep_timer;
 } pb_packed omote_RemoteEvent;
 PB_PACKED_STRUCT_END
 
@@ -235,6 +270,15 @@ typedef struct _omote_DeviceState {
 PB_PACKED_STRUCT_END
 
 PB_PACKED_STRUCT_START
+typedef struct _omote_SleepTimerStatus {
+    omote_SleepTimerStage stage;
+    /* Accurate as of send; the OMOTE interpolates between updates for display
+ and takes each new value as authoritative. */
+    uint32_t remaining_seconds;
+} pb_packed omote_SleepTimerStatus;
+PB_PACKED_STRUCT_END
+
+PB_PACKED_STRUCT_START
 /* State synchronization response */
 typedef struct _omote_StateSync {
     /* Optional time data (NanoPB will generate has_time automatically) */
@@ -243,6 +287,8 @@ typedef struct _omote_StateSync {
     /* Per-device state snapshots */
     pb_size_t devices_count;
     omote_DeviceState devices[8];
+    bool has_sleep_timer;
+    omote_SleepTimerStatus sleep_timer;
 } pb_packed omote_StateSync;
 PB_PACKED_STRUCT_END
 
@@ -324,8 +370,8 @@ extern "C" {
 #define _omote_OmoteCommandType_ARRAYSIZE ((omote_OmoteCommandType)(omote_OmoteCommandType_LONG+1))
 
 #define _omote_OmoteCommand_MIN omote_OmoteCommand_OMOTE_COMMAND_UNSPECIFIED
-#define _omote_OmoteCommand_MAX omote_OmoteCommand_LIST_DEVICES
-#define _omote_OmoteCommand_ARRAYSIZE ((omote_OmoteCommand)(omote_OmoteCommand_LIST_DEVICES+1))
+#define _omote_OmoteCommand_MAX omote_OmoteCommand_SLEEP_TIMER_CANCEL
+#define _omote_OmoteCommand_ARRAYSIZE ((omote_OmoteCommand)(omote_OmoteCommand_SLEEP_TIMER_CANCEL+1))
 
 #define _omote_ResponseKind_MIN omote_ResponseKind_RESPONSE_KIND_UNSPECIFIED
 #define _omote_ResponseKind_MAX omote_ResponseKind_DEVICE_LIST
@@ -339,6 +385,10 @@ extern "C" {
 #define _omote_MediaType_MAX omote_MediaType_MEDIA_TYPE_TV
 #define _omote_MediaType_ARRAYSIZE ((omote_MediaType)(omote_MediaType_MEDIA_TYPE_TV+1))
 
+#define _omote_SleepTimerStage_MIN omote_SleepTimerStage_SLEEP_TIMER_STAGE_UNSPECIFIED
+#define _omote_SleepTimerStage_MAX omote_SleepTimerStage_SLEEP_TIMER_STAGE_FIRED
+#define _omote_SleepTimerStage_ARRAYSIZE ((omote_SleepTimerStage)(omote_SleepTimerStage_SLEEP_TIMER_STAGE_FIRED+1))
+
 #define _omote_PairingStep_MIN omote_PairingStep_PAIRING_STEP_UNSPECIFIED
 #define _omote_PairingStep_MAX omote_PairingStep_PAIRING_STEP_CANCELLED
 #define _omote_PairingStep_ARRAYSIZE ((omote_PairingStep)(omote_PairingStep_PAIRING_STEP_CANCELLED+1))
@@ -346,6 +396,7 @@ extern "C" {
 #define _omote_PairingRequirement_MIN omote_PairingRequirement_PAIRING_REQUIREMENT_UNSPECIFIED
 #define _omote_PairingRequirement_MAX omote_PairingRequirement_PAIRING_REQUIREMENT_MANDATORY
 #define _omote_PairingRequirement_ARRAYSIZE ((omote_PairingRequirement)(omote_PairingRequirement_PAIRING_REQUIREMENT_MANDATORY+1))
+
 
 #define omote_RemoteEvent_command_ENUMTYPE omote_OmoteCommand
 #define omote_RemoteEvent_type_ENUMTYPE omote_OmoteCommandType
@@ -360,6 +411,8 @@ extern "C" {
 
 
 
+#define omote_SleepTimerStatus_stage_ENUMTYPE omote_SleepTimerStage
+
 
 #define omote_PairingStatus_step_ENUMTYPE omote_PairingStep
 
@@ -370,7 +423,8 @@ extern "C" {
 
 
 /* Initializer values for message structs */
-#define omote_RemoteEvent_init_default           {"", _omote_OmoteCommand_MIN, _omote_OmoteCommandType_MIN, "", 0, {0, {0}}}
+#define omote_SleepTimerRequest_init_default     {0}
+#define omote_RemoteEvent_init_default           {"", _omote_OmoteCommand_MIN, _omote_OmoteCommandType_MIN, "", 0, {0, {0}}, false, omote_SleepTimerRequest_init_default}
 #define omote_Ack_init_default                   {0}
 #define omote_Volume_init_default                {0, 0}
 #define omote_Power_init_default                 {0}
@@ -379,12 +433,14 @@ extern "C" {
 #define omote_MediaPlayerState_init_default      {false, omote_Metadata_init_default}
 #define omote_Time_init_default                  {0, 0}
 #define omote_DeviceState_init_default           {"", 0, false, omote_Volume_init_default, false, omote_MediaPlayerState_init_default}
-#define omote_StateSync_init_default             {false, omote_Time_init_default, 0, {omote_DeviceState_init_default, omote_DeviceState_init_default, omote_DeviceState_init_default, omote_DeviceState_init_default, omote_DeviceState_init_default, omote_DeviceState_init_default, omote_DeviceState_init_default, omote_DeviceState_init_default}}
+#define omote_SleepTimerStatus_init_default      {_omote_SleepTimerStage_MIN, 0}
+#define omote_StateSync_init_default             {false, omote_Time_init_default, 0, {omote_DeviceState_init_default, omote_DeviceState_init_default, omote_DeviceState_init_default, omote_DeviceState_init_default, omote_DeviceState_init_default, omote_DeviceState_init_default, omote_DeviceState_init_default, omote_DeviceState_init_default}, false, omote_SleepTimerStatus_init_default}
 #define omote_PairingStatus_init_default         {"", _omote_PairingStep_MIN, "", 0, 0, ""}
 #define omote_DeviceInfo_init_default            {"", "", "", "", _omote_PairingRequirement_MIN, 0, 0}
 #define omote_DeviceList_init_default            {0, {omote_DeviceInfo_init_default, omote_DeviceInfo_init_default, omote_DeviceInfo_init_default, omote_DeviceInfo_init_default, omote_DeviceInfo_init_default, omote_DeviceInfo_init_default, omote_DeviceInfo_init_default, omote_DeviceInfo_init_default}, 0}
 #define omote_CommandResult_init_default         {_omote_ResponseKind_MIN, 0, {omote_Ack_init_default}}
-#define omote_RemoteEvent_init_zero              {"", _omote_OmoteCommand_MIN, _omote_OmoteCommandType_MIN, "", 0, {0, {0}}}
+#define omote_SleepTimerRequest_init_zero        {0}
+#define omote_RemoteEvent_init_zero              {"", _omote_OmoteCommand_MIN, _omote_OmoteCommandType_MIN, "", 0, {0, {0}}, false, omote_SleepTimerRequest_init_zero}
 #define omote_Ack_init_zero                      {0}
 #define omote_Volume_init_zero                   {0, 0}
 #define omote_Power_init_zero                    {0}
@@ -393,19 +449,22 @@ extern "C" {
 #define omote_MediaPlayerState_init_zero         {false, omote_Metadata_init_zero}
 #define omote_Time_init_zero                     {0, 0}
 #define omote_DeviceState_init_zero              {"", 0, false, omote_Volume_init_zero, false, omote_MediaPlayerState_init_zero}
-#define omote_StateSync_init_zero                {false, omote_Time_init_zero, 0, {omote_DeviceState_init_zero, omote_DeviceState_init_zero, omote_DeviceState_init_zero, omote_DeviceState_init_zero, omote_DeviceState_init_zero, omote_DeviceState_init_zero, omote_DeviceState_init_zero, omote_DeviceState_init_zero}}
+#define omote_SleepTimerStatus_init_zero         {_omote_SleepTimerStage_MIN, 0}
+#define omote_StateSync_init_zero                {false, omote_Time_init_zero, 0, {omote_DeviceState_init_zero, omote_DeviceState_init_zero, omote_DeviceState_init_zero, omote_DeviceState_init_zero, omote_DeviceState_init_zero, omote_DeviceState_init_zero, omote_DeviceState_init_zero, omote_DeviceState_init_zero}, false, omote_SleepTimerStatus_init_zero}
 #define omote_PairingStatus_init_zero            {"", _omote_PairingStep_MIN, "", 0, 0, ""}
 #define omote_DeviceInfo_init_zero               {"", "", "", "", _omote_PairingRequirement_MIN, 0, 0}
 #define omote_DeviceList_init_zero               {0, {omote_DeviceInfo_init_zero, omote_DeviceInfo_init_zero, omote_DeviceInfo_init_zero, omote_DeviceInfo_init_zero, omote_DeviceInfo_init_zero, omote_DeviceInfo_init_zero, omote_DeviceInfo_init_zero, omote_DeviceInfo_init_zero}, 0}
 #define omote_CommandResult_init_zero            {_omote_ResponseKind_MIN, 0, {omote_Ack_init_zero}}
 
 /* Field tags (for use in manual encoding/decoding) */
+#define omote_SleepTimerRequest_minutes_tag      1
 #define omote_RemoteEvent_device_tag             1
 #define omote_RemoteEvent_command_tag            2
 #define omote_RemoteEvent_type_tag               3
 #define omote_RemoteEvent_remote_id_tag          4
 #define omote_RemoteEvent_remote_mac_tag         5
 #define omote_RemoteEvent_data_tag               10
+#define omote_RemoteEvent_sleep_timer_tag        11
 #define omote_Volume_level_tag                   1
 #define omote_Volume_is_muted_tag                2
 #define omote_Power_is_on_tag                    1
@@ -426,8 +485,11 @@ extern "C" {
 #define omote_DeviceState_is_on_tag              2
 #define omote_DeviceState_volume_tag             3
 #define omote_DeviceState_media_player_tag       4
+#define omote_SleepTimerStatus_stage_tag         1
+#define omote_SleepTimerStatus_remaining_seconds_tag 2
 #define omote_StateSync_time_tag                 1
 #define omote_StateSync_devices_tag              2
+#define omote_StateSync_sleep_timer_tag          3
 #define omote_PairingStatus_device_id_tag        1
 #define omote_PairingStatus_step_tag             2
 #define omote_PairingStatus_message_tag          3
@@ -453,15 +515,22 @@ extern "C" {
 #define omote_CommandResult_device_list_tag      16
 
 /* Struct field encoding specification for nanopb */
+#define omote_SleepTimerRequest_FIELDLIST(X, a) \
+X(a, STATIC,   SINGULAR, UINT32,   minutes,           1)
+#define omote_SleepTimerRequest_CALLBACK NULL
+#define omote_SleepTimerRequest_DEFAULT NULL
+
 #define omote_RemoteEvent_FIELDLIST(X, a) \
 X(a, STATIC,   SINGULAR, STRING,   device,            1) \
 X(a, STATIC,   SINGULAR, UENUM,    command,           2) \
 X(a, STATIC,   SINGULAR, UENUM,    type,              3) \
 X(a, STATIC,   SINGULAR, STRING,   remote_id,         4) \
 X(a, STATIC,   SINGULAR, FIXED64,  remote_mac,        5) \
-X(a, STATIC,   SINGULAR, BYTES,    data,             10)
+X(a, STATIC,   SINGULAR, BYTES,    data,             10) \
+X(a, STATIC,   OPTIONAL, MESSAGE,  sleep_timer,      11)
 #define omote_RemoteEvent_CALLBACK NULL
 #define omote_RemoteEvent_DEFAULT NULL
+#define omote_RemoteEvent_sleep_timer_MSGTYPE omote_SleepTimerRequest
 
 #define omote_Ack_FIELDLIST(X, a) \
 
@@ -519,13 +588,21 @@ X(a, STATIC,   OPTIONAL, MESSAGE,  media_player,      4)
 #define omote_DeviceState_volume_MSGTYPE omote_Volume
 #define omote_DeviceState_media_player_MSGTYPE omote_MediaPlayerState
 
+#define omote_SleepTimerStatus_FIELDLIST(X, a) \
+X(a, STATIC,   SINGULAR, UENUM,    stage,             1) \
+X(a, STATIC,   SINGULAR, UINT32,   remaining_seconds,   2)
+#define omote_SleepTimerStatus_CALLBACK NULL
+#define omote_SleepTimerStatus_DEFAULT NULL
+
 #define omote_StateSync_FIELDLIST(X, a) \
 X(a, STATIC,   OPTIONAL, MESSAGE,  time,              1) \
-X(a, STATIC,   REPEATED, MESSAGE,  devices,           2)
+X(a, STATIC,   REPEATED, MESSAGE,  devices,           2) \
+X(a, STATIC,   OPTIONAL, MESSAGE,  sleep_timer,       3)
 #define omote_StateSync_CALLBACK NULL
 #define omote_StateSync_DEFAULT NULL
 #define omote_StateSync_time_MSGTYPE omote_Time
 #define omote_StateSync_devices_MSGTYPE omote_DeviceState
+#define omote_StateSync_sleep_timer_MSGTYPE omote_SleepTimerStatus
 
 #define omote_PairingStatus_FIELDLIST(X, a) \
 X(a, STATIC,   SINGULAR, STRING,   device_id,         1) \
@@ -574,6 +651,7 @@ X(a, STATIC,   ONEOF,    MESSAGE,  (data,device_list,data.device_list),  16)
 #define omote_CommandResult_data_pairing_MSGTYPE omote_PairingStatus
 #define omote_CommandResult_data_device_list_MSGTYPE omote_DeviceList
 
+extern const pb_msgdesc_t omote_SleepTimerRequest_msg;
 extern const pb_msgdesc_t omote_RemoteEvent_msg;
 extern const pb_msgdesc_t omote_Ack_msg;
 extern const pb_msgdesc_t omote_Volume_msg;
@@ -583,6 +661,7 @@ extern const pb_msgdesc_t omote_Metadata_msg;
 extern const pb_msgdesc_t omote_MediaPlayerState_msg;
 extern const pb_msgdesc_t omote_Time_msg;
 extern const pb_msgdesc_t omote_DeviceState_msg;
+extern const pb_msgdesc_t omote_SleepTimerStatus_msg;
 extern const pb_msgdesc_t omote_StateSync_msg;
 extern const pb_msgdesc_t omote_PairingStatus_msg;
 extern const pb_msgdesc_t omote_DeviceInfo_msg;
@@ -590,6 +669,7 @@ extern const pb_msgdesc_t omote_DeviceList_msg;
 extern const pb_msgdesc_t omote_CommandResult_msg;
 
 /* Defines for backwards compatibility with code written before nanopb-0.4.0 */
+#define omote_SleepTimerRequest_fields &omote_SleepTimerRequest_msg
 #define omote_RemoteEvent_fields &omote_RemoteEvent_msg
 #define omote_Ack_fields &omote_Ack_msg
 #define omote_Volume_fields &omote_Volume_msg
@@ -599,6 +679,7 @@ extern const pb_msgdesc_t omote_CommandResult_msg;
 #define omote_MediaPlayerState_fields &omote_MediaPlayerState_msg
 #define omote_Time_fields &omote_Time_msg
 #define omote_DeviceState_fields &omote_DeviceState_msg
+#define omote_SleepTimerStatus_fields &omote_SleepTimerStatus_msg
 #define omote_StateSync_fields &omote_StateSync_msg
 #define omote_PairingStatus_fields &omote_PairingStatus_msg
 #define omote_DeviceInfo_fields &omote_DeviceInfo_msg
@@ -608,7 +689,7 @@ extern const pb_msgdesc_t omote_CommandResult_msg;
 /* Maximum encoded size of messages (where known) */
 #define OMOTE_REMOTE_MESSAGES_PB_H_MAX_SIZE      omote_CommandResult_size
 #define omote_Ack_size                           0
-#define omote_CommandResult_size                 2254
+#define omote_CommandResult_size                 2264
 #define omote_DeviceInfo_size                    129
 #define omote_DeviceList_size                    1058
 #define omote_DeviceState_size                   276
@@ -617,8 +698,10 @@ extern const pb_msgdesc_t omote_CommandResult_msg;
 #define omote_Metadata_size                      226
 #define omote_PairingStatus_size                 238
 #define omote_Power_size                         2
-#define omote_RemoteEvent_size                   145
-#define omote_StateSync_size                     2249
+#define omote_RemoteEvent_size                   153
+#define omote_SleepTimerRequest_size             6
+#define omote_SleepTimerStatus_size              8
+#define omote_StateSync_size                     2259
 #define omote_Time_size                          15
 #define omote_Volume_size                        7
 
