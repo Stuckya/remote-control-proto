@@ -145,6 +145,8 @@ message Error {
   // Classifies the failure; see ErrorCategory. Additive and back-compatible:
   // older clients ignore it and treat every error as "surface".
   ErrorCategory category = 2;
+
+  string device_id = 3;
 }
 
 // Closed set mirroring pyatv's MediaType; UNSPECIFIED is the additive default so
