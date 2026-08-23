@@ -14,6 +14,7 @@ omote.RemoteEvent.data max_size:64  # Increased for pairing: PIN (16 hex) + UUID
 
 # Nested message options - static buffers for all strings/bytes
 omote.Error.message max_size:128
+omote.Error.device_id max_size:32
 omote.Metadata.title max_size:64
 omote.Metadata.artist max_size:64
 omote.Metadata.album max_size:64

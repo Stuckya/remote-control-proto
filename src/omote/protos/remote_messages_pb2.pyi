@@ -421,20 +421,23 @@ class Error(_message.Message):
 
     MESSAGE_FIELD_NUMBER: _builtins.int
     CATEGORY_FIELD_NUMBER: _builtins.int
+    DEVICE_ID_FIELD_NUMBER: _builtins.int
     message: _builtins.str
     category: Global___ErrorCategory.ValueType
     """Classifies the failure; see ErrorCategory. Additive and back-compatible:
     older clients ignore it and treat every error as "surface".
     """
+    device_id: _builtins.str
     def __init__(
         self,
         *,
         message: _builtins.str = ...,
         category: Global___ErrorCategory.ValueType = ...,
+        device_id: _builtins.str = ...,
     ) -> None: ...
     _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
     def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
-    _ClearFieldArgType: _TypeAlias = _typing.Literal["category", b"category", "message", b"message"]  # noqa: Y015
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["category", b"category", "device_id", b"device_id", "message", b"message"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
     def WhichOneof(self, oneof_group: _Never) -> None: ...
 

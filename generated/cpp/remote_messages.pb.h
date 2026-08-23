@@ -184,6 +184,7 @@ typedef struct _omote_Error {
     /* Classifies the failure; see ErrorCategory. Additive and back-compatible:
  older clients ignore it and treat every error as "surface". */
     omote_ErrorCategory category;
+    char device_id[32];
 } pb_packed omote_Error;
 PB_PACKED_STRUCT_END
 
@@ -373,7 +374,7 @@ extern "C" {
 #define omote_Ack_init_default                   {0}
 #define omote_Volume_init_default                {0, 0}
 #define omote_Power_init_default                 {0}
-#define omote_Error_init_default                 {"", _omote_ErrorCategory_MIN}
+#define omote_Error_init_default                 {"", _omote_ErrorCategory_MIN, ""}
 #define omote_Metadata_init_default              {"", "", "", 0, 0, "", _omote_MediaType_MIN}
 #define omote_MediaPlayerState_init_default      {false, omote_Metadata_init_default}
 #define omote_Time_init_default                  {0, 0}
@@ -387,7 +388,7 @@ extern "C" {
 #define omote_Ack_init_zero                      {0}
 #define omote_Volume_init_zero                   {0, 0}
 #define omote_Power_init_zero                    {0}
-#define omote_Error_init_zero                    {"", _omote_ErrorCategory_MIN}
+#define omote_Error_init_zero                    {"", _omote_ErrorCategory_MIN, ""}
 #define omote_Metadata_init_zero                 {"", "", "", 0, 0, "", _omote_MediaType_MIN}
 #define omote_MediaPlayerState_init_zero         {false, omote_Metadata_init_zero}
 #define omote_Time_init_zero                     {0, 0}
@@ -410,6 +411,7 @@ extern "C" {
 #define omote_Power_is_on_tag                    1
 #define omote_Error_message_tag                  1
 #define omote_Error_category_tag                 2
+#define omote_Error_device_id_tag                3
 #define omote_Metadata_title_tag                 1
 #define omote_Metadata_artist_tag                2
 #define omote_Metadata_album_tag                 3
@@ -479,7 +481,8 @@ X(a, STATIC,   SINGULAR, BOOL,     is_on,             1)
 
 #define omote_Error_FIELDLIST(X, a) \
 X(a, STATIC,   SINGULAR, STRING,   message,           1) \
-X(a, STATIC,   SINGULAR, UENUM,    category,          2)
+X(a, STATIC,   SINGULAR, UENUM,    category,          2) \
+X(a, STATIC,   SINGULAR, STRING,   device_id,         3)
 #define omote_Error_CALLBACK NULL
 #define omote_Error_DEFAULT NULL
 
@@ -609,7 +612,7 @@ extern const pb_msgdesc_t omote_CommandResult_msg;
 #define omote_DeviceInfo_size                    129
 #define omote_DeviceList_size                    1058
 #define omote_DeviceState_size                   276
-#define omote_Error_size                         132
+#define omote_Error_size                         165
 #define omote_MediaPlayerState_size              229
 #define omote_Metadata_size                      226
 #define omote_PairingStatus_size                 238
