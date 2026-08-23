@@ -93,6 +93,13 @@ class _OmoteCommandEnumTypeWrapper(_enum_type_wrapper._EnumTypeWrapper[_OmoteCom
     """delete stored credentials for RemoteEvent.device"""
     LIST_DEVICES: _OmoteCommand.ValueType  # 39
     """request paired devices from hub storage"""
+    SLEEP_TIMER_SET: _OmoteCommand.ValueType  # 40
+    """Sleep timer (addressed to the hub, not a device). The hub owns the
+    countdown because the OMOTE deep-sleeps; SET and EXTEND carry
+    SleepTimerRequest.
+    """
+    SLEEP_TIMER_EXTEND: _OmoteCommand.ValueType  # 41
+    SLEEP_TIMER_CANCEL: _OmoteCommand.ValueType  # 42
 
 class OmoteCommand(_OmoteCommand, metaclass=_OmoteCommandEnumTypeWrapper):
     """Remote control commands
@@ -149,6 +156,13 @@ DEVICE_FORGET: OmoteCommand.ValueType  # 38
 """delete stored credentials for RemoteEvent.device"""
 LIST_DEVICES: OmoteCommand.ValueType  # 39
 """request paired devices from hub storage"""
+SLEEP_TIMER_SET: OmoteCommand.ValueType  # 40
+"""Sleep timer (addressed to the hub, not a device). The hub owns the
+countdown because the OMOTE deep-sleeps; SET and EXTEND carry
+SleepTimerRequest.
+"""
+SLEEP_TIMER_EXTEND: OmoteCommand.ValueType  # 41
+SLEEP_TIMER_CANCEL: OmoteCommand.ValueType  # 42
 Global___OmoteCommand: _TypeAlias = OmoteCommand  # noqa: Y015
 
 class _ResponseKind:
@@ -246,6 +260,45 @@ MEDIA_TYPE_MUSIC: MediaType.ValueType  # 2
 MEDIA_TYPE_TV: MediaType.ValueType  # 3
 Global___MediaType: _TypeAlias = MediaType  # noqa: Y015
 
+class _SleepTimerStage:
+    ValueType = _typing.NewType("ValueType", _builtins.int)
+    V: _TypeAlias = ValueType  # noqa: Y015
+
+class _SleepTimerStageEnumTypeWrapper(_enum_type_wrapper._EnumTypeWrapper[_SleepTimerStage.ValueType], _builtins.type):
+    DESCRIPTOR: _descriptor.EnumDescriptor
+    SLEEP_TIMER_STAGE_UNSPECIFIED: _SleepTimerStage.ValueType  # 0
+    SLEEP_TIMER_STAGE_IDLE: _SleepTimerStage.ValueType  # 1
+    SLEEP_TIMER_STAGE_ARMED: _SleepTimerStage.ValueType  # 2
+    SLEEP_TIMER_STAGE_WARNING: _SleepTimerStage.ValueType  # 3
+    """Inside the final minute before firing."""
+    SLEEP_TIMER_STAGE_FIRED: _SleepTimerStage.ValueType  # 4
+    """Momentary: the hub is powering off every device it observes as on. The
+    next status is IDLE, so a remote that wakes long afterwards never replays
+    it. The OMOTE names the affected devices from the per-device state it
+    already mirrors; sending them here would push a single-device StateSync
+    past what the MQTT and ESP-NOW transports can carry.
+    """
+
+class SleepTimerStage(_SleepTimerStage, metaclass=_SleepTimerStageEnumTypeWrapper):
+    """Where the hub's sleep-timer countdown stands. IDLE is sent explicitly on
+    cancel and after firing: StateSync is a change feed, so an absent
+    SleepTimerStatus means "no news about the timer", never "no timer".
+    """
+
+SLEEP_TIMER_STAGE_UNSPECIFIED: SleepTimerStage.ValueType  # 0
+SLEEP_TIMER_STAGE_IDLE: SleepTimerStage.ValueType  # 1
+SLEEP_TIMER_STAGE_ARMED: SleepTimerStage.ValueType  # 2
+SLEEP_TIMER_STAGE_WARNING: SleepTimerStage.ValueType  # 3
+"""Inside the final minute before firing."""
+SLEEP_TIMER_STAGE_FIRED: SleepTimerStage.ValueType  # 4
+"""Momentary: the hub is powering off every device it observes as on. The
+next status is IDLE, so a remote that wakes long afterwards never replays
+it. The OMOTE names the affected devices from the per-device state it
+already mirrors; sending them here would push a single-device StateSync
+past what the MQTT and ESP-NOW transports can carry.
+"""
+Global___SleepTimerStage: _TypeAlias = SleepTimerStage  # noqa: Y015
+
 class _PairingStep:
     ValueType = _typing.NewType("ValueType", _builtins.int)
     V: _TypeAlias = ValueType  # noqa: Y015
@@ -302,6 +355,30 @@ PAIRING_REQUIREMENT_MANDATORY: PairingRequirement.ValueType  # 5
 Global___PairingRequirement: _TypeAlias = PairingRequirement  # noqa: Y015
 
 @_typing.final
+class SleepTimerRequest(_message.Message):
+    """Duration for SLEEP_TIMER_SET (the whole countdown) and SLEEP_TIMER_EXTEND
+    (added to whatever the hub has left). The hub clamps to its accepted range
+    and answers an out-of-range value with the clamped timer, never an error.
+    """
+
+    DESCRIPTOR: _descriptor.Descriptor
+
+    MINUTES_FIELD_NUMBER: _builtins.int
+    minutes: _builtins.int
+    def __init__(
+        self,
+        *,
+        minutes: _builtins.int = ...,
+    ) -> None: ...
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["minutes", b"minutes"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
+
+Global___SleepTimerRequest: _TypeAlias = SleepTimerRequest  # noqa: Y015
+
+@_typing.final
 class RemoteEvent(_message.Message):
     """Event sent from OMOTE remote to hub"""
 
@@ -313,6 +390,7 @@ class RemoteEvent(_message.Message):
     REMOTE_ID_FIELD_NUMBER: _builtins.int
     REMOTE_MAC_FIELD_NUMBER: _builtins.int
     DATA_FIELD_NUMBER: _builtins.int
+    SLEEP_TIMER_FIELD_NUMBER: _builtins.int
     device: _builtins.str
     """Device identifier (string for now, may migrate to uint32 device_id later)"""
     command: Global___OmoteCommand.ValueType
@@ -329,6 +407,10 @@ class RemoteEvent(_message.Message):
     """Optional additional data (escape hatch for custom payloads)
     Limited to 32 bytes for ESP-NOW compatibility
     """
+    @_builtins.property
+    def sleep_timer(self) -> Global___SleepTimerRequest:
+        """Set only for SLEEP_TIMER_SET and SLEEP_TIMER_EXTEND"""
+
     def __init__(
         self,
         *,
@@ -338,10 +420,11 @@ class RemoteEvent(_message.Message):
         remote_id: _builtins.str = ...,
         remote_mac: _builtins.int = ...,
         data: _builtins.bytes = ...,
+        sleep_timer: Global___SleepTimerRequest | None = ...,
     ) -> None: ...
-    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    _HasFieldArgType: _TypeAlias = _typing.Literal["sleep_timer", b"sleep_timer"]  # noqa: Y015
     def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
-    _ClearFieldArgType: _TypeAlias = _typing.Literal["command", b"command", "data", b"data", "device", b"device", "remote_id", b"remote_id", "remote_mac", b"remote_mac", "type", b"type"]  # noqa: Y015
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["command", b"command", "data", b"data", "device", b"device", "remote_id", b"remote_id", "remote_mac", b"remote_mac", "sleep_timer", b"sleep_timer", "type", b"type"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
     def WhichOneof(self, oneof_group: _Never) -> None: ...
 
@@ -566,6 +649,31 @@ class DeviceState(_message.Message):
 Global___DeviceState: _TypeAlias = DeviceState  # noqa: Y015
 
 @_typing.final
+class SleepTimerStatus(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
+
+    STAGE_FIELD_NUMBER: _builtins.int
+    REMAINING_SECONDS_FIELD_NUMBER: _builtins.int
+    stage: Global___SleepTimerStage.ValueType
+    remaining_seconds: _builtins.int
+    """Accurate as of send; the OMOTE interpolates between updates for display
+    and takes each new value as authoritative.
+    """
+    def __init__(
+        self,
+        *,
+        stage: Global___SleepTimerStage.ValueType = ...,
+        remaining_seconds: _builtins.int = ...,
+    ) -> None: ...
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["remaining_seconds", b"remaining_seconds", "stage", b"stage"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
+
+Global___SleepTimerStatus: _TypeAlias = SleepTimerStatus  # noqa: Y015
+
+@_typing.final
 class StateSync(_message.Message):
     """State synchronization response"""
 
@@ -573,6 +681,7 @@ class StateSync(_message.Message):
 
     TIME_FIELD_NUMBER: _builtins.int
     DEVICES_FIELD_NUMBER: _builtins.int
+    SLEEP_TIMER_FIELD_NUMBER: _builtins.int
     @_builtins.property
     def time(self) -> Global___Time:
         """Optional time data (NanoPB will generate has_time automatically)"""
@@ -581,15 +690,18 @@ class StateSync(_message.Message):
     def devices(self) -> _containers.RepeatedCompositeFieldContainer[Global___DeviceState]:
         """Per-device state snapshots"""
 
+    @_builtins.property
+    def sleep_timer(self) -> Global___SleepTimerStatus: ...
     def __init__(
         self,
         *,
         time: Global___Time | None = ...,
         devices: _abc.Iterable[Global___DeviceState] | None = ...,
+        sleep_timer: Global___SleepTimerStatus | None = ...,
     ) -> None: ...
-    _HasFieldArgType: _TypeAlias = _typing.Literal["time", b"time"]  # noqa: Y015
+    _HasFieldArgType: _TypeAlias = _typing.Literal["sleep_timer", b"sleep_timer", "time", b"time"]  # noqa: Y015
     def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
-    _ClearFieldArgType: _TypeAlias = _typing.Literal["devices", b"devices", "time", b"time"]  # noqa: Y015
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["devices", b"devices", "sleep_timer", b"sleep_timer", "time", b"time"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
     def WhichOneof(self, oneof_group: _Never) -> None: ...
 

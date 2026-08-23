@@ -61,6 +61,20 @@ enum OmoteCommand {
   DEVICE_SCAN_CANCEL = 37; // abort an in-progress scan
   DEVICE_FORGET = 38; // delete stored credentials for RemoteEvent.device
   LIST_DEVICES = 39; // request paired devices from hub storage
+
+  // Sleep timer (addressed to the hub, not a device). The hub owns the
+  // countdown because the OMOTE deep-sleeps; SET and EXTEND carry
+  // SleepTimerRequest.
+  SLEEP_TIMER_SET = 40;
+  SLEEP_TIMER_EXTEND = 41;
+  SLEEP_TIMER_CANCEL = 42;
+}
+
+// Duration for SLEEP_TIMER_SET (the whole countdown) and SLEEP_TIMER_EXTEND
+// (added to whatever the hub has left). The hub clamps to its accepted range
+// and answers an out-of-range value with the clamped timer, never an error.
+message SleepTimerRequest {
+  uint32 minutes = 1;
 }
 
 // Event sent from OMOTE remote to hub
@@ -84,6 +98,9 @@ message RemoteEvent {
   // Optional additional data (escape hatch for custom payloads)
   // Limited to 32 bytes for ESP-NOW compatibility
   bytes data = 10;
+
+  // Set only for SLEEP_TIMER_SET and SLEEP_TIMER_EXTEND
+  SleepTimerRequest sleep_timer = 11;
 }
 
 // Response kind for command results
@@ -198,6 +215,33 @@ message DeviceState {
   MediaPlayerState media_player = 4;
 }
 
+// Where the hub's sleep-timer countdown stands. IDLE is sent explicitly on
+// cancel and after firing: StateSync is a change feed, so an absent
+// SleepTimerStatus means "no news about the timer", never "no timer".
+enum SleepTimerStage {
+  SLEEP_TIMER_STAGE_UNSPECIFIED = 0;
+  SLEEP_TIMER_STAGE_IDLE = 1;
+  SLEEP_TIMER_STAGE_ARMED = 2;
+
+  // Inside the final minute before firing.
+  SLEEP_TIMER_STAGE_WARNING = 3;
+
+  // Momentary: the hub is powering off every device it observes as on. The
+  // next status is IDLE, so a remote that wakes long afterwards never replays
+  // it. The OMOTE names the affected devices from the per-device state it
+  // already mirrors; sending them here would push a single-device StateSync
+  // past what the MQTT and ESP-NOW transports can carry.
+  SLEEP_TIMER_STAGE_FIRED = 4;
+}
+
+message SleepTimerStatus {
+  SleepTimerStage stage = 1;
+
+  // Accurate as of send; the OMOTE interpolates between updates for display
+  // and takes each new value as authoritative.
+  uint32 remaining_seconds = 2;
+}
+
 // State synchronization response
 message StateSync {
   // Optional time data (NanoPB will generate has_time automatically)
@@ -205,6 +249,8 @@ message StateSync {
 
   // Per-device state snapshots
   repeated DeviceState devices = 2;
+
+  SleepTimerStatus sleep_timer = 3;
 }
 
 // Closed set of pairing-session steps mirroring the hub's PairingState. On hub
