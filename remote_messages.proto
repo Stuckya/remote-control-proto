@@ -68,6 +68,10 @@ enum OmoteCommand {
   SLEEP_TIMER_SET = 40;
   SLEEP_TIMER_EXTEND = 41;
   SLEEP_TIMER_CANCEL = 42;
+
+  // Input selection, addressed to the device that owns the inputs (an AVR or
+  // a TV). Carries InputSelectRequest.
+  INPUT_SELECT = 43;
 }
 
 // Duration for SLEEP_TIMER_SET (the whole countdown) and SLEEP_TIMER_EXTEND
@@ -75,6 +79,12 @@ enum OmoteCommand {
 // and answers an out-of-range value with the clamped timer, never an error.
 message SleepTimerRequest {
   uint32 minutes = 1;
+}
+
+// The input INPUT_SELECT switches to, named the way the addressed device
+// lists it. An unknown name is a command rejection.
+message InputSelectRequest {
+  string input = 1;
 }
 
 // Event sent from OMOTE remote to hub
@@ -101,6 +111,9 @@ message RemoteEvent {
 
   // Set only for SLEEP_TIMER_SET and SLEEP_TIMER_EXTEND
   SleepTimerRequest sleep_timer = 11;
+
+  // Set only for INPUT_SELECT
+  InputSelectRequest input_select = 12;
 }
 
 // Response kind for command results

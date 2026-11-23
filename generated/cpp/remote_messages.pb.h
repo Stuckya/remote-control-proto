@@ -70,7 +70,10 @@ typedef enum _omote_OmoteCommand {
  SleepTimerRequest. */
     omote_OmoteCommand_SLEEP_TIMER_SET = 40,
     omote_OmoteCommand_SLEEP_TIMER_EXTEND = 41,
-    omote_OmoteCommand_SLEEP_TIMER_CANCEL = 42
+    omote_OmoteCommand_SLEEP_TIMER_CANCEL = 42,
+    /* Input selection, addressed to the device that owns the inputs (an AVR or
+ a TV). Carries InputSelectRequest. */
+    omote_OmoteCommand_INPUT_SELECT = 43
 } omote_OmoteCommand;
 
 /* Response kind for command results */
@@ -164,6 +167,14 @@ typedef struct _omote_SleepTimerRequest {
 } pb_packed omote_SleepTimerRequest;
 PB_PACKED_STRUCT_END
 
+PB_PACKED_STRUCT_START
+/* The input INPUT_SELECT switches to, named the way the addressed device
+ lists it. An unknown name is a command rejection. */
+typedef struct _omote_InputSelectRequest {
+    char input[32];
+} pb_packed omote_InputSelectRequest;
+PB_PACKED_STRUCT_END
+
 typedef PB_BYTES_ARRAY_T(64) omote_RemoteEvent_data_t;
 PB_PACKED_STRUCT_START
 /* Event sent from OMOTE remote to hub */
@@ -185,6 +196,9 @@ typedef struct _omote_RemoteEvent {
     /* Set only for SLEEP_TIMER_SET and SLEEP_TIMER_EXTEND */
     bool has_sleep_timer;
     omote_SleepTimerRequest sleep_timer;
+    /* Set only for INPUT_SELECT */
+    bool has_input_select;
+    omote_InputSelectRequest input_select;
 } pb_packed omote_RemoteEvent;
 PB_PACKED_STRUCT_END
 
@@ -370,8 +384,8 @@ extern "C" {
 #define _omote_OmoteCommandType_ARRAYSIZE ((omote_OmoteCommandType)(omote_OmoteCommandType_LONG+1))
 
 #define _omote_OmoteCommand_MIN omote_OmoteCommand_OMOTE_COMMAND_UNSPECIFIED
-#define _omote_OmoteCommand_MAX omote_OmoteCommand_SLEEP_TIMER_CANCEL
-#define _omote_OmoteCommand_ARRAYSIZE ((omote_OmoteCommand)(omote_OmoteCommand_SLEEP_TIMER_CANCEL+1))
+#define _omote_OmoteCommand_MAX omote_OmoteCommand_INPUT_SELECT
+#define _omote_OmoteCommand_ARRAYSIZE ((omote_OmoteCommand)(omote_OmoteCommand_INPUT_SELECT+1))
 
 #define _omote_ResponseKind_MIN omote_ResponseKind_RESPONSE_KIND_UNSPECIFIED
 #define _omote_ResponseKind_MAX omote_ResponseKind_DEVICE_LIST
@@ -396,6 +410,7 @@ extern "C" {
 #define _omote_PairingRequirement_MIN omote_PairingRequirement_PAIRING_REQUIREMENT_UNSPECIFIED
 #define _omote_PairingRequirement_MAX omote_PairingRequirement_PAIRING_REQUIREMENT_MANDATORY
 #define _omote_PairingRequirement_ARRAYSIZE ((omote_PairingRequirement)(omote_PairingRequirement_PAIRING_REQUIREMENT_MANDATORY+1))
+
 
 
 #define omote_RemoteEvent_command_ENUMTYPE omote_OmoteCommand
@@ -424,7 +439,8 @@ extern "C" {
 
 /* Initializer values for message structs */
 #define omote_SleepTimerRequest_init_default     {0}
-#define omote_RemoteEvent_init_default           {"", _omote_OmoteCommand_MIN, _omote_OmoteCommandType_MIN, "", 0, {0, {0}}, false, omote_SleepTimerRequest_init_default}
+#define omote_InputSelectRequest_init_default    {""}
+#define omote_RemoteEvent_init_default           {"", _omote_OmoteCommand_MIN, _omote_OmoteCommandType_MIN, "", 0, {0, {0}}, false, omote_SleepTimerRequest_init_default, false, omote_InputSelectRequest_init_default}
 #define omote_Ack_init_default                   {0}
 #define omote_Volume_init_default                {0, 0}
 #define omote_Power_init_default                 {0}
@@ -440,7 +456,8 @@ extern "C" {
 #define omote_DeviceList_init_default            {0, {omote_DeviceInfo_init_default, omote_DeviceInfo_init_default, omote_DeviceInfo_init_default, omote_DeviceInfo_init_default, omote_DeviceInfo_init_default, omote_DeviceInfo_init_default, omote_DeviceInfo_init_default, omote_DeviceInfo_init_default}, 0}
 #define omote_CommandResult_init_default         {_omote_ResponseKind_MIN, 0, {omote_Ack_init_default}}
 #define omote_SleepTimerRequest_init_zero        {0}
-#define omote_RemoteEvent_init_zero              {"", _omote_OmoteCommand_MIN, _omote_OmoteCommandType_MIN, "", 0, {0, {0}}, false, omote_SleepTimerRequest_init_zero}
+#define omote_InputSelectRequest_init_zero       {""}
+#define omote_RemoteEvent_init_zero              {"", _omote_OmoteCommand_MIN, _omote_OmoteCommandType_MIN, "", 0, {0, {0}}, false, omote_SleepTimerRequest_init_zero, false, omote_InputSelectRequest_init_zero}
 #define omote_Ack_init_zero                      {0}
 #define omote_Volume_init_zero                   {0, 0}
 #define omote_Power_init_zero                    {0}
@@ -458,6 +475,7 @@ extern "C" {
 
 /* Field tags (for use in manual encoding/decoding) */
 #define omote_SleepTimerRequest_minutes_tag      1
+#define omote_InputSelectRequest_input_tag       1
 #define omote_RemoteEvent_device_tag             1
 #define omote_RemoteEvent_command_tag            2
 #define omote_RemoteEvent_type_tag               3
@@ -465,6 +483,7 @@ extern "C" {
 #define omote_RemoteEvent_remote_mac_tag         5
 #define omote_RemoteEvent_data_tag               10
 #define omote_RemoteEvent_sleep_timer_tag        11
+#define omote_RemoteEvent_input_select_tag       12
 #define omote_Volume_level_tag                   1
 #define omote_Volume_is_muted_tag                2
 #define omote_Power_is_on_tag                    1
@@ -520,6 +539,11 @@ X(a, STATIC,   SINGULAR, UINT32,   minutes,           1)
 #define omote_SleepTimerRequest_CALLBACK NULL
 #define omote_SleepTimerRequest_DEFAULT NULL
 
+#define omote_InputSelectRequest_FIELDLIST(X, a) \
+X(a, STATIC,   SINGULAR, STRING,   input,             1)
+#define omote_InputSelectRequest_CALLBACK NULL
+#define omote_InputSelectRequest_DEFAULT NULL
+
 #define omote_RemoteEvent_FIELDLIST(X, a) \
 X(a, STATIC,   SINGULAR, STRING,   device,            1) \
 X(a, STATIC,   SINGULAR, UENUM,    command,           2) \
@@ -527,10 +551,12 @@ X(a, STATIC,   SINGULAR, UENUM,    type,              3) \
 X(a, STATIC,   SINGULAR, STRING,   remote_id,         4) \
 X(a, STATIC,   SINGULAR, FIXED64,  remote_mac,        5) \
 X(a, STATIC,   SINGULAR, BYTES,    data,             10) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  sleep_timer,      11)
+X(a, STATIC,   OPTIONAL, MESSAGE,  sleep_timer,      11) \
+X(a, STATIC,   OPTIONAL, MESSAGE,  input_select,     12)
 #define omote_RemoteEvent_CALLBACK NULL
 #define omote_RemoteEvent_DEFAULT NULL
 #define omote_RemoteEvent_sleep_timer_MSGTYPE omote_SleepTimerRequest
+#define omote_RemoteEvent_input_select_MSGTYPE omote_InputSelectRequest
 
 #define omote_Ack_FIELDLIST(X, a) \
 
@@ -652,6 +678,7 @@ X(a, STATIC,   ONEOF,    MESSAGE,  (data,device_list,data.device_list),  16)
 #define omote_CommandResult_data_device_list_MSGTYPE omote_DeviceList
 
 extern const pb_msgdesc_t omote_SleepTimerRequest_msg;
+extern const pb_msgdesc_t omote_InputSelectRequest_msg;
 extern const pb_msgdesc_t omote_RemoteEvent_msg;
 extern const pb_msgdesc_t omote_Ack_msg;
 extern const pb_msgdesc_t omote_Volume_msg;
@@ -670,6 +697,7 @@ extern const pb_msgdesc_t omote_CommandResult_msg;
 
 /* Defines for backwards compatibility with code written before nanopb-0.4.0 */
 #define omote_SleepTimerRequest_fields &omote_SleepTimerRequest_msg
+#define omote_InputSelectRequest_fields &omote_InputSelectRequest_msg
 #define omote_RemoteEvent_fields &omote_RemoteEvent_msg
 #define omote_Ack_fields &omote_Ack_msg
 #define omote_Volume_fields &omote_Volume_msg
@@ -694,11 +722,12 @@ extern const pb_msgdesc_t omote_CommandResult_msg;
 #define omote_DeviceList_size                    1058
 #define omote_DeviceState_size                   276
 #define omote_Error_size                         165
+#define omote_InputSelectRequest_size            33
 #define omote_MediaPlayerState_size              229
 #define omote_Metadata_size                      226
 #define omote_PairingStatus_size                 238
 #define omote_Power_size                         2
-#define omote_RemoteEvent_size                   153
+#define omote_RemoteEvent_size                   188
 #define omote_SleepTimerRequest_size             6
 #define omote_SleepTimerStatus_size              8
 #define omote_StateSync_size                     2259

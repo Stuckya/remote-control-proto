@@ -9,6 +9,7 @@
 omote.RemoteEvent.device max_size:32
 omote.RemoteEvent.remote_id max_size:32
 omote.RemoteEvent.data max_size:64  # Increased for pairing: PIN (16 hex) + UUID (36) + nulls
+omote.InputSelectRequest.input max_size:32
 
 # CommandResult options - no dynamic allocation needed for message itself
 

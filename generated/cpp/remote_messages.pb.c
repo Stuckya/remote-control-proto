@@ -9,6 +9,9 @@
 PB_BIND(omote_SleepTimerRequest, omote_SleepTimerRequest, AUTO)
 
 
+PB_BIND(omote_InputSelectRequest, omote_InputSelectRequest, AUTO)
+
+
 PB_BIND(omote_RemoteEvent, omote_RemoteEvent, AUTO)
 
 

@@ -100,6 +100,10 @@ class _OmoteCommandEnumTypeWrapper(_enum_type_wrapper._EnumTypeWrapper[_OmoteCom
     """
     SLEEP_TIMER_EXTEND: _OmoteCommand.ValueType  # 41
     SLEEP_TIMER_CANCEL: _OmoteCommand.ValueType  # 42
+    INPUT_SELECT: _OmoteCommand.ValueType  # 43
+    """Input selection, addressed to the device that owns the inputs (an AVR or
+    a TV). Carries InputSelectRequest.
+    """
 
 class OmoteCommand(_OmoteCommand, metaclass=_OmoteCommandEnumTypeWrapper):
     """Remote control commands
@@ -163,6 +167,10 @@ SleepTimerRequest.
 """
 SLEEP_TIMER_EXTEND: OmoteCommand.ValueType  # 41
 SLEEP_TIMER_CANCEL: OmoteCommand.ValueType  # 42
+INPUT_SELECT: OmoteCommand.ValueType  # 43
+"""Input selection, addressed to the device that owns the inputs (an AVR or
+a TV). Carries InputSelectRequest.
+"""
 Global___OmoteCommand: _TypeAlias = OmoteCommand  # noqa: Y015
 
 class _ResponseKind:
@@ -379,6 +387,29 @@ class SleepTimerRequest(_message.Message):
 Global___SleepTimerRequest: _TypeAlias = SleepTimerRequest  # noqa: Y015
 
 @_typing.final
+class InputSelectRequest(_message.Message):
+    """The input INPUT_SELECT switches to, named the way the addressed device
+    lists it. An unknown name is a command rejection.
+    """
+
+    DESCRIPTOR: _descriptor.Descriptor
+
+    INPUT_FIELD_NUMBER: _builtins.int
+    input: _builtins.str
+    def __init__(
+        self,
+        *,
+        input: _builtins.str = ...,
+    ) -> None: ...
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["input", b"input"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
+
+Global___InputSelectRequest: _TypeAlias = InputSelectRequest  # noqa: Y015
+
+@_typing.final
 class RemoteEvent(_message.Message):
     """Event sent from OMOTE remote to hub"""
 
@@ -391,6 +422,7 @@ class RemoteEvent(_message.Message):
     REMOTE_MAC_FIELD_NUMBER: _builtins.int
     DATA_FIELD_NUMBER: _builtins.int
     SLEEP_TIMER_FIELD_NUMBER: _builtins.int
+    INPUT_SELECT_FIELD_NUMBER: _builtins.int
     device: _builtins.str
     """Device identifier (string for now, may migrate to uint32 device_id later)"""
     command: Global___OmoteCommand.ValueType
@@ -411,6 +443,10 @@ class RemoteEvent(_message.Message):
     def sleep_timer(self) -> Global___SleepTimerRequest:
         """Set only for SLEEP_TIMER_SET and SLEEP_TIMER_EXTEND"""
 
+    @_builtins.property
+    def input_select(self) -> Global___InputSelectRequest:
+        """Set only for INPUT_SELECT"""
+
     def __init__(
         self,
         *,
@@ -421,10 +457,11 @@ class RemoteEvent(_message.Message):
         remote_mac: _builtins.int = ...,
         data: _builtins.bytes = ...,
         sleep_timer: Global___SleepTimerRequest | None = ...,
+        input_select: Global___InputSelectRequest | None = ...,
     ) -> None: ...
-    _HasFieldArgType: _TypeAlias = _typing.Literal["sleep_timer", b"sleep_timer"]  # noqa: Y015
+    _HasFieldArgType: _TypeAlias = _typing.Literal["input_select", b"input_select", "sleep_timer", b"sleep_timer"]  # noqa: Y015
     def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
-    _ClearFieldArgType: _TypeAlias = _typing.Literal["command", b"command", "data", b"data", "device", b"device", "remote_id", b"remote_id", "remote_mac", b"remote_mac", "sleep_timer", b"sleep_timer", "type", b"type"]  # noqa: Y015
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["command", b"command", "data", b"data", "device", b"device", "input_select", b"input_select", "remote_id", b"remote_id", "remote_mac", b"remote_mac", "sleep_timer", b"sleep_timer", "type", b"type"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
     def WhichOneof(self, oneof_group: _Never) -> None: ...
 
