@@ -564,21 +564,54 @@ class Error(_message.Message):
 Global___Error: _TypeAlias = Error  # noqa: Y015
 
 @_typing.final
+class Cover(_message.Message):
+    """The fitted size of the now-playing cover, in display pixels. The OMOTE draws
+    the cover at exactly this size and never derives an aspect itself.
+    """
+
+    DESCRIPTOR: _descriptor.Descriptor
+
+    WIDTH_FIELD_NUMBER: _builtins.int
+    HEIGHT_FIELD_NUMBER: _builtins.int
+    width: _builtins.int
+    height: _builtins.int
+    def __init__(
+        self,
+        *,
+        width: _builtins.int = ...,
+        height: _builtins.int = ...,
+    ) -> None: ...
+    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["height", b"height", "width", b"width"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
+    def WhichOneof(self, oneof_group: _Never) -> None: ...
+
+Global___Cover: _TypeAlias = Cover  # noqa: Y015
+
+@_typing.final
 class Metadata(_message.Message):
-    """Media metadata"""
+    """What the OMOTE now-playing screen shows. The hub composes the lines, so the
+    remote renders them as given. Field 2 was artist and field 3 was album: an
+    explicit break, deployed with the firmware in lockstep.
+    """
 
     DESCRIPTOR: _descriptor.Descriptor
 
     TITLE_FIELD_NUMBER: _builtins.int
-    ARTIST_FIELD_NUMBER: _builtins.int
-    ALBUM_FIELD_NUMBER: _builtins.int
+    SUBTITLE_FIELD_NUMBER: _builtins.int
+    CAPTION_FIELD_NUMBER: _builtins.int
     DURATION_FIELD_NUMBER: _builtins.int
     POSITION_FIELD_NUMBER: _builtins.int
     STATE_FIELD_NUMBER: _builtins.int
     MEDIA_TYPE_FIELD_NUMBER: _builtins.int
+    POSITION_AT_FIELD_NUMBER: _builtins.int
+    COVER_FIELD_NUMBER: _builtins.int
     title: _builtins.str
-    artist: _builtins.str
-    album: _builtins.str
+    subtitle: _builtins.str
+    """Second line: artist for music, show name for TV."""
+    caption: _builtins.str
+    """Third line: album for music, season and episode for TV."""
     duration: _builtins.int
     """Duration in seconds (0 if unknown)"""
     position: _builtins.int
@@ -586,20 +619,28 @@ class Metadata(_message.Message):
     state: _builtins.str
     """Playback state: "playing", "paused", "stopped", etc."""
     media_type: Global___MediaType.ValueType
+    position_at: _builtins.int
+    """Unix time, in seconds, at which position was read. The OMOTE clock is set
+    from StateSync.time, so the remote advances position from this instant.
+    """
+    @_builtins.property
+    def cover(self) -> Global___Cover: ...
     def __init__(
         self,
         *,
         title: _builtins.str = ...,
-        artist: _builtins.str = ...,
-        album: _builtins.str = ...,
+        subtitle: _builtins.str = ...,
+        caption: _builtins.str = ...,
         duration: _builtins.int = ...,
         position: _builtins.int = ...,
         state: _builtins.str = ...,
         media_type: Global___MediaType.ValueType = ...,
+        position_at: _builtins.int = ...,
+        cover: Global___Cover | None = ...,
     ) -> None: ...
-    _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
+    _HasFieldArgType: _TypeAlias = _typing.Literal["cover", b"cover"]  # noqa: Y015
     def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
-    _ClearFieldArgType: _TypeAlias = _typing.Literal["album", b"album", "artist", b"artist", "duration", b"duration", "media_type", b"media_type", "position", b"position", "state", b"state", "title", b"title"]  # noqa: Y015
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["caption", b"caption", "cover", b"cover", "duration", b"duration", "media_type", b"media_type", "position", b"position", "position_at", b"position_at", "state", b"state", "subtitle", b"subtitle", "title", b"title"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
     def WhichOneof(self, oneof_group: _Never) -> None: ...
 

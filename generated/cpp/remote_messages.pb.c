@@ -27,6 +27,9 @@ PB_BIND(omote_Power, omote_Power, AUTO)
 PB_BIND(omote_Error, omote_Error, AUTO)
 
 
+PB_BIND(omote_Cover, omote_Cover, AUTO)
+
+
 PB_BIND(omote_Metadata, omote_Metadata, AUTO)
 
 
