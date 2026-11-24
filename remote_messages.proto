@@ -188,11 +188,24 @@ enum MediaType {
   MEDIA_TYPE_TV = 3;
 }
 
-// Media metadata
+// The fitted size of the now-playing cover, in display pixels. The OMOTE draws
+// the cover at exactly this size and never derives an aspect itself.
+message Cover {
+  uint32 width = 1;
+  uint32 height = 2;
+}
+
+// What the OMOTE now-playing screen shows. The hub composes the lines, so the
+// remote renders them as given. Field 2 was artist and field 3 was album: an
+// explicit break, deployed with the firmware in lockstep.
 message Metadata {
   string title = 1;
-  string artist = 2;
-  string album = 3;
+
+  // Second line: artist for music, show name for TV.
+  string subtitle = 2;
+
+  // Third line: album for music, season and episode for TV.
+  string caption = 3;
 
   // Duration in seconds (0 if unknown)
   uint32 duration = 4;
@@ -204,6 +217,12 @@ message Metadata {
   string state = 6;
 
   MediaType media_type = 7;
+
+  // Unix time, in seconds, at which position was read. The OMOTE clock is set
+  // from StateSync.time, so the remote advances position from this instant.
+  fixed64 position_at = 8;
+
+  Cover cover = 9;
 }
 
 // Media player state for devices with playback capabilities

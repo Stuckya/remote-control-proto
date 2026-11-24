@@ -238,11 +238,24 @@ typedef struct _omote_Error {
 PB_PACKED_STRUCT_END
 
 PB_PACKED_STRUCT_START
-/* Media metadata */
+/* The fitted size of the now-playing cover, in display pixels. The OMOTE draws
+ the cover at exactly this size and never derives an aspect itself. */
+typedef struct _omote_Cover {
+    uint32_t width;
+    uint32_t height;
+} pb_packed omote_Cover;
+PB_PACKED_STRUCT_END
+
+PB_PACKED_STRUCT_START
+/* What the OMOTE now-playing screen shows. The hub composes the lines, so the
+ remote renders them as given. Field 2 was artist and field 3 was album: an
+ explicit break, deployed with the firmware in lockstep. */
 typedef struct _omote_Metadata {
     char title[64];
-    char artist[64];
-    char album[64];
+    /* Second line: artist for music, show name for TV. */
+    char subtitle[64];
+    /* Third line: album for music, season and episode for TV. */
+    char caption[64];
     /* Duration in seconds (0 if unknown) */
     uint32_t duration;
     /* Current position in seconds */
@@ -250,6 +263,11 @@ typedef struct _omote_Metadata {
     /* Playback state: "playing", "paused", "stopped", etc. */
     char state[16];
     omote_MediaType media_type;
+    /* Unix time, in seconds, at which position was read. The OMOTE clock is set
+ from StateSync.time, so the remote advances position from this instant. */
+    uint64_t position_at;
+    bool has_cover;
+    omote_Cover cover;
 } pb_packed omote_Metadata;
 PB_PACKED_STRUCT_END
 
@@ -421,6 +439,7 @@ extern "C" {
 
 #define omote_Error_category_ENUMTYPE omote_ErrorCategory
 
+
 #define omote_Metadata_media_type_ENUMTYPE omote_MediaType
 
 
@@ -445,7 +464,8 @@ extern "C" {
 #define omote_Volume_init_default                {0, 0}
 #define omote_Power_init_default                 {0}
 #define omote_Error_init_default                 {"", _omote_ErrorCategory_MIN, ""}
-#define omote_Metadata_init_default              {"", "", "", 0, 0, "", _omote_MediaType_MIN}
+#define omote_Cover_init_default                 {0, 0}
+#define omote_Metadata_init_default              {"", "", "", 0, 0, "", _omote_MediaType_MIN, 0, false, omote_Cover_init_default}
 #define omote_MediaPlayerState_init_default      {false, omote_Metadata_init_default}
 #define omote_Time_init_default                  {0, 0}
 #define omote_DeviceState_init_default           {"", 0, false, omote_Volume_init_default, false, omote_MediaPlayerState_init_default}
@@ -462,7 +482,8 @@ extern "C" {
 #define omote_Volume_init_zero                   {0, 0}
 #define omote_Power_init_zero                    {0}
 #define omote_Error_init_zero                    {"", _omote_ErrorCategory_MIN, ""}
-#define omote_Metadata_init_zero                 {"", "", "", 0, 0, "", _omote_MediaType_MIN}
+#define omote_Cover_init_zero                    {0, 0}
+#define omote_Metadata_init_zero                 {"", "", "", 0, 0, "", _omote_MediaType_MIN, 0, false, omote_Cover_init_zero}
 #define omote_MediaPlayerState_init_zero         {false, omote_Metadata_init_zero}
 #define omote_Time_init_zero                     {0, 0}
 #define omote_DeviceState_init_zero              {"", 0, false, omote_Volume_init_zero, false, omote_MediaPlayerState_init_zero}
@@ -490,13 +511,17 @@ extern "C" {
 #define omote_Error_message_tag                  1
 #define omote_Error_category_tag                 2
 #define omote_Error_device_id_tag                3
+#define omote_Cover_width_tag                    1
+#define omote_Cover_height_tag                   2
 #define omote_Metadata_title_tag                 1
-#define omote_Metadata_artist_tag                2
-#define omote_Metadata_album_tag                 3
+#define omote_Metadata_subtitle_tag              2
+#define omote_Metadata_caption_tag               3
 #define omote_Metadata_duration_tag              4
 #define omote_Metadata_position_tag              5
 #define omote_Metadata_state_tag                 6
 #define omote_Metadata_media_type_tag            7
+#define omote_Metadata_position_at_tag           8
+#define omote_Metadata_cover_tag                 9
 #define omote_MediaPlayerState_playback_tag      1
 #define omote_Time_timestamp_tag                 1
 #define omote_Time_timezone_offset_tag           2
@@ -581,16 +606,25 @@ X(a, STATIC,   SINGULAR, STRING,   device_id,         3)
 #define omote_Error_CALLBACK NULL
 #define omote_Error_DEFAULT NULL
 
+#define omote_Cover_FIELDLIST(X, a) \
+X(a, STATIC,   SINGULAR, UINT32,   width,             1) \
+X(a, STATIC,   SINGULAR, UINT32,   height,            2)
+#define omote_Cover_CALLBACK NULL
+#define omote_Cover_DEFAULT NULL
+
 #define omote_Metadata_FIELDLIST(X, a) \
 X(a, STATIC,   SINGULAR, STRING,   title,             1) \
-X(a, STATIC,   SINGULAR, STRING,   artist,            2) \
-X(a, STATIC,   SINGULAR, STRING,   album,             3) \
+X(a, STATIC,   SINGULAR, STRING,   subtitle,          2) \
+X(a, STATIC,   SINGULAR, STRING,   caption,           3) \
 X(a, STATIC,   SINGULAR, UINT32,   duration,          4) \
 X(a, STATIC,   SINGULAR, UINT32,   position,          5) \
 X(a, STATIC,   SINGULAR, STRING,   state,             6) \
-X(a, STATIC,   SINGULAR, UENUM,    media_type,        7)
+X(a, STATIC,   SINGULAR, UENUM,    media_type,        7) \
+X(a, STATIC,   SINGULAR, FIXED64,  position_at,       8) \
+X(a, STATIC,   OPTIONAL, MESSAGE,  cover,             9)
 #define omote_Metadata_CALLBACK NULL
 #define omote_Metadata_DEFAULT NULL
+#define omote_Metadata_cover_MSGTYPE omote_Cover
 
 #define omote_MediaPlayerState_FIELDLIST(X, a) \
 X(a, STATIC,   OPTIONAL, MESSAGE,  playback,          1)
@@ -684,6 +718,7 @@ extern const pb_msgdesc_t omote_Ack_msg;
 extern const pb_msgdesc_t omote_Volume_msg;
 extern const pb_msgdesc_t omote_Power_msg;
 extern const pb_msgdesc_t omote_Error_msg;
+extern const pb_msgdesc_t omote_Cover_msg;
 extern const pb_msgdesc_t omote_Metadata_msg;
 extern const pb_msgdesc_t omote_MediaPlayerState_msg;
 extern const pb_msgdesc_t omote_Time_msg;
@@ -703,6 +738,7 @@ extern const pb_msgdesc_t omote_CommandResult_msg;
 #define omote_Volume_fields &omote_Volume_msg
 #define omote_Power_fields &omote_Power_msg
 #define omote_Error_fields &omote_Error_msg
+#define omote_Cover_fields &omote_Cover_msg
 #define omote_Metadata_fields &omote_Metadata_msg
 #define omote_MediaPlayerState_fields &omote_MediaPlayerState_msg
 #define omote_Time_fields &omote_Time_msg
@@ -717,20 +753,21 @@ extern const pb_msgdesc_t omote_CommandResult_msg;
 /* Maximum encoded size of messages (where known) */
 #define OMOTE_REMOTE_MESSAGES_PB_H_MAX_SIZE      omote_CommandResult_size
 #define omote_Ack_size                           0
-#define omote_CommandResult_size                 2264
+#define omote_CommandResult_size                 2448
+#define omote_Cover_size                         12
 #define omote_DeviceInfo_size                    129
 #define omote_DeviceList_size                    1058
-#define omote_DeviceState_size                   276
+#define omote_DeviceState_size                   299
 #define omote_Error_size                         165
 #define omote_InputSelectRequest_size            33
-#define omote_MediaPlayerState_size              229
-#define omote_Metadata_size                      226
+#define omote_MediaPlayerState_size              252
+#define omote_Metadata_size                      249
 #define omote_PairingStatus_size                 238
 #define omote_Power_size                         2
 #define omote_RemoteEvent_size                   188
 #define omote_SleepTimerRequest_size             6
 #define omote_SleepTimerStatus_size              8
-#define omote_StateSync_size                     2259
+#define omote_StateSync_size                     2443
 #define omote_Time_size                          15
 #define omote_Volume_size                        7
 
