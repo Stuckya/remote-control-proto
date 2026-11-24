@@ -268,6 +268,38 @@ MEDIA_TYPE_MUSIC: MediaType.ValueType  # 2
 MEDIA_TYPE_TV: MediaType.ValueType  # 3
 Global___MediaType: _TypeAlias = MediaType  # noqa: Y015
 
+class _CoverArt:
+    ValueType = _typing.NewType("ValueType", _builtins.int)
+    V: _TypeAlias = ValueType  # noqa: Y015
+
+class _CoverArtEnumTypeWrapper(_enum_type_wrapper._EnumTypeWrapper[_CoverArt.ValueType], _builtins.type):
+    DESCRIPTOR: _descriptor.EnumDescriptor
+    COVER_ART_UNSPECIFIED: _CoverArt.ValueType  # 0
+    COVER_ART_PLACEHOLDER: _CoverArt.ValueType  # 1
+    """No art for this item: a flat tile with the media type's glyph."""
+    COVER_ART_LOADING: _CoverArt.ValueType  # 2
+    """The hub is still fetching the art: a flat tile with no glyph. The size is
+    the placeholder's until the art arrives.
+    """
+    COVER_ART_READY: _CoverArt.ValueType  # 3
+    """The art is ready at url, already fitted to the cover size."""
+
+class CoverArt(_CoverArt, metaclass=_CoverArtEnumTypeWrapper):
+    """Where the now-playing cover's art stands. The OMOTE treats UNSPECIFIED and
+    unknown values as PLACEHOLDER.
+    """
+
+COVER_ART_UNSPECIFIED: CoverArt.ValueType  # 0
+COVER_ART_PLACEHOLDER: CoverArt.ValueType  # 1
+"""No art for this item: a flat tile with the media type's glyph."""
+COVER_ART_LOADING: CoverArt.ValueType  # 2
+"""The hub is still fetching the art: a flat tile with no glyph. The size is
+the placeholder's until the art arrives.
+"""
+COVER_ART_READY: CoverArt.ValueType  # 3
+"""The art is ready at url, already fitted to the cover size."""
+Global___CoverArt: _TypeAlias = CoverArt  # noqa: Y015
+
 class _SleepTimerStage:
     ValueType = _typing.NewType("ValueType", _builtins.int)
     V: _TypeAlias = ValueType  # noqa: Y015
@@ -573,17 +605,26 @@ class Cover(_message.Message):
 
     WIDTH_FIELD_NUMBER: _builtins.int
     HEIGHT_FIELD_NUMBER: _builtins.int
+    ART_FIELD_NUMBER: _builtins.int
+    URL_FIELD_NUMBER: _builtins.int
     width: _builtins.int
     height: _builtins.int
+    art: Global___CoverArt.ValueType
+    url: _builtins.str
+    """Set only when art is READY. A plain HTTP GET returns width * height RGB565
+    pixels, little-endian, row by row: an LVGL true-color image with no header.
+    """
     def __init__(
         self,
         *,
         width: _builtins.int = ...,
         height: _builtins.int = ...,
+        art: Global___CoverArt.ValueType = ...,
+        url: _builtins.str = ...,
     ) -> None: ...
     _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
     def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
-    _ClearFieldArgType: _TypeAlias = _typing.Literal["height", b"height", "width", b"width"]  # noqa: Y015
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["art", b"art", "height", b"height", "url", b"url", "width", b"width"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
     def WhichOneof(self, oneof_group: _Never) -> None: ...
 

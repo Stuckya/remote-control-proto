@@ -188,11 +188,33 @@ enum MediaType {
   MEDIA_TYPE_TV = 3;
 }
 
+// Where the now-playing cover's art stands. The OMOTE treats UNSPECIFIED and
+// unknown values as PLACEHOLDER.
+enum CoverArt {
+  COVER_ART_UNSPECIFIED = 0;
+
+  // No art for this item: a flat tile with the media type's glyph.
+  COVER_ART_PLACEHOLDER = 1;
+
+  // The hub is still fetching the art: a flat tile with no glyph. The size is
+  // the placeholder's until the art arrives.
+  COVER_ART_LOADING = 2;
+
+  // The art is ready at url, already fitted to the cover size.
+  COVER_ART_READY = 3;
+}
+
 // The fitted size of the now-playing cover, in display pixels. The OMOTE draws
 // the cover at exactly this size and never derives an aspect itself.
 message Cover {
   uint32 width = 1;
   uint32 height = 2;
+
+  CoverArt art = 3;
+
+  // Set only when art is READY. A plain HTTP GET returns width * height RGB565
+  // pixels, little-endian, row by row: an LVGL true-color image with no header.
+  string url = 4;
 }
 
 // What the OMOTE now-playing screen shows. The hub composes the lines, so the

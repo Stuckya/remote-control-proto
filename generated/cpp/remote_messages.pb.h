@@ -115,6 +115,19 @@ typedef enum _omote_MediaType {
     omote_MediaType_MEDIA_TYPE_TV = 3
 } omote_MediaType;
 
+/* Where the now-playing cover's art stands. The OMOTE treats UNSPECIFIED and
+ unknown values as PLACEHOLDER. */
+typedef enum _omote_CoverArt {
+    omote_CoverArt_COVER_ART_UNSPECIFIED = 0,
+    /* No art for this item: a flat tile with the media type's glyph. */
+    omote_CoverArt_COVER_ART_PLACEHOLDER = 1,
+    /* The hub is still fetching the art: a flat tile with no glyph. The size is
+ the placeholder's until the art arrives. */
+    omote_CoverArt_COVER_ART_LOADING = 2,
+    /* The art is ready at url, already fitted to the cover size. */
+    omote_CoverArt_COVER_ART_READY = 3
+} omote_CoverArt;
+
 /* Where the hub's sleep-timer countdown stands. IDLE is sent explicitly on
  cancel and after firing: StateSync is a change feed, so an absent
  SleepTimerStatus means "no news about the timer", never "no timer". */
@@ -243,6 +256,10 @@ PB_PACKED_STRUCT_START
 typedef struct _omote_Cover {
     uint32_t width;
     uint32_t height;
+    omote_CoverArt art;
+    /* Set only when art is READY. A plain HTTP GET returns width * height RGB565
+ pixels, little-endian, row by row: an LVGL true-color image with no header. */
+    char url[128];
 } pb_packed omote_Cover;
 PB_PACKED_STRUCT_END
 
@@ -417,6 +434,10 @@ extern "C" {
 #define _omote_MediaType_MAX omote_MediaType_MEDIA_TYPE_TV
 #define _omote_MediaType_ARRAYSIZE ((omote_MediaType)(omote_MediaType_MEDIA_TYPE_TV+1))
 
+#define _omote_CoverArt_MIN omote_CoverArt_COVER_ART_UNSPECIFIED
+#define _omote_CoverArt_MAX omote_CoverArt_COVER_ART_READY
+#define _omote_CoverArt_ARRAYSIZE ((omote_CoverArt)(omote_CoverArt_COVER_ART_READY+1))
+
 #define _omote_SleepTimerStage_MIN omote_SleepTimerStage_SLEEP_TIMER_STAGE_UNSPECIFIED
 #define _omote_SleepTimerStage_MAX omote_SleepTimerStage_SLEEP_TIMER_STAGE_FIRED
 #define _omote_SleepTimerStage_ARRAYSIZE ((omote_SleepTimerStage)(omote_SleepTimerStage_SLEEP_TIMER_STAGE_FIRED+1))
@@ -439,6 +460,7 @@ extern "C" {
 
 #define omote_Error_category_ENUMTYPE omote_ErrorCategory
 
+#define omote_Cover_art_ENUMTYPE omote_CoverArt
 
 #define omote_Metadata_media_type_ENUMTYPE omote_MediaType
 
@@ -464,7 +486,7 @@ extern "C" {
 #define omote_Volume_init_default                {0, 0}
 #define omote_Power_init_default                 {0}
 #define omote_Error_init_default                 {"", _omote_ErrorCategory_MIN, ""}
-#define omote_Cover_init_default                 {0, 0}
+#define omote_Cover_init_default                 {0, 0, _omote_CoverArt_MIN, ""}
 #define omote_Metadata_init_default              {"", "", "", 0, 0, "", _omote_MediaType_MIN, 0, false, omote_Cover_init_default}
 #define omote_MediaPlayerState_init_default      {false, omote_Metadata_init_default}
 #define omote_Time_init_default                  {0, 0}
@@ -482,7 +504,7 @@ extern "C" {
 #define omote_Volume_init_zero                   {0, 0}
 #define omote_Power_init_zero                    {0}
 #define omote_Error_init_zero                    {"", _omote_ErrorCategory_MIN, ""}
-#define omote_Cover_init_zero                    {0, 0}
+#define omote_Cover_init_zero                    {0, 0, _omote_CoverArt_MIN, ""}
 #define omote_Metadata_init_zero                 {"", "", "", 0, 0, "", _omote_MediaType_MIN, 0, false, omote_Cover_init_zero}
 #define omote_MediaPlayerState_init_zero         {false, omote_Metadata_init_zero}
 #define omote_Time_init_zero                     {0, 0}
@@ -513,6 +535,8 @@ extern "C" {
 #define omote_Error_device_id_tag                3
 #define omote_Cover_width_tag                    1
 #define omote_Cover_height_tag                   2
+#define omote_Cover_art_tag                      3
+#define omote_Cover_url_tag                      4
 #define omote_Metadata_title_tag                 1
 #define omote_Metadata_subtitle_tag              2
 #define omote_Metadata_caption_tag               3
@@ -608,7 +632,9 @@ X(a, STATIC,   SINGULAR, STRING,   device_id,         3)
 
 #define omote_Cover_FIELDLIST(X, a) \
 X(a, STATIC,   SINGULAR, UINT32,   width,             1) \
-X(a, STATIC,   SINGULAR, UINT32,   height,            2)
+X(a, STATIC,   SINGULAR, UINT32,   height,            2) \
+X(a, STATIC,   SINGULAR, UENUM,    art,               3) \
+X(a, STATIC,   SINGULAR, STRING,   url,               4)
 #define omote_Cover_CALLBACK NULL
 #define omote_Cover_DEFAULT NULL
 
@@ -753,21 +779,21 @@ extern const pb_msgdesc_t omote_CommandResult_msg;
 /* Maximum encoded size of messages (where known) */
 #define OMOTE_REMOTE_MESSAGES_PB_H_MAX_SIZE      omote_CommandResult_size
 #define omote_Ack_size                           0
-#define omote_CommandResult_size                 2448
-#define omote_Cover_size                         12
+#define omote_CommandResult_size                 3512
+#define omote_Cover_size                         144
 #define omote_DeviceInfo_size                    129
 #define omote_DeviceList_size                    1058
-#define omote_DeviceState_size                   299
+#define omote_DeviceState_size                   432
 #define omote_Error_size                         165
 #define omote_InputSelectRequest_size            33
-#define omote_MediaPlayerState_size              252
-#define omote_Metadata_size                      249
+#define omote_MediaPlayerState_size              385
+#define omote_Metadata_size                      382
 #define omote_PairingStatus_size                 238
 #define omote_Power_size                         2
 #define omote_RemoteEvent_size                   188
 #define omote_SleepTimerRequest_size             6
 #define omote_SleepTimerStatus_size              8
-#define omote_StateSync_size                     2443
+#define omote_StateSync_size                     3507
 #define omote_Time_size                          15
 #define omote_Volume_size                        7
 
