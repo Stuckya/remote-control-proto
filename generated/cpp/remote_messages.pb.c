@@ -30,10 +30,10 @@ PB_BIND(omote_Error, omote_Error, AUTO)
 PB_BIND(omote_Cover, omote_Cover, AUTO)
 
 
-PB_BIND(omote_Metadata, omote_Metadata, AUTO)
+PB_BIND(omote_Metadata, omote_Metadata, 2)
 
 
-PB_BIND(omote_MediaPlayerState, omote_MediaPlayerState, AUTO)
+PB_BIND(omote_MediaPlayerState, omote_MediaPlayerState, 2)
 
 
 PB_BIND(omote_Time, omote_Time, AUTO)
@@ -58,6 +58,8 @@ PB_BIND(omote_DeviceList, omote_DeviceList, 2)
 
 
 PB_BIND(omote_CommandResult, omote_CommandResult, 2)
+
+
 
 
 
