@@ -260,6 +260,9 @@ typedef struct _omote_Cover {
     /* Set only when art is READY. A plain HTTP GET returns width * height RGB565
  pixels, little-endian, row by row: an LVGL true-color image with no header. */
     char url[128];
+    /* Set only when art is READY: a BlurHash of the art, drawn at the cover size
+ while the OMOTE fetches url. At most 4 x 4 components. */
+    char blurhash[40];
 } pb_packed omote_Cover;
 PB_PACKED_STRUCT_END
 
@@ -486,7 +489,7 @@ extern "C" {
 #define omote_Volume_init_default                {0, 0}
 #define omote_Power_init_default                 {0}
 #define omote_Error_init_default                 {"", _omote_ErrorCategory_MIN, ""}
-#define omote_Cover_init_default                 {0, 0, _omote_CoverArt_MIN, ""}
+#define omote_Cover_init_default                 {0, 0, _omote_CoverArt_MIN, "", ""}
 #define omote_Metadata_init_default              {"", "", "", 0, 0, "", _omote_MediaType_MIN, 0, false, omote_Cover_init_default}
 #define omote_MediaPlayerState_init_default      {false, omote_Metadata_init_default}
 #define omote_Time_init_default                  {0, 0}
@@ -504,7 +507,7 @@ extern "C" {
 #define omote_Volume_init_zero                   {0, 0}
 #define omote_Power_init_zero                    {0}
 #define omote_Error_init_zero                    {"", _omote_ErrorCategory_MIN, ""}
-#define omote_Cover_init_zero                    {0, 0, _omote_CoverArt_MIN, ""}
+#define omote_Cover_init_zero                    {0, 0, _omote_CoverArt_MIN, "", ""}
 #define omote_Metadata_init_zero                 {"", "", "", 0, 0, "", _omote_MediaType_MIN, 0, false, omote_Cover_init_zero}
 #define omote_MediaPlayerState_init_zero         {false, omote_Metadata_init_zero}
 #define omote_Time_init_zero                     {0, 0}
@@ -537,6 +540,7 @@ extern "C" {
 #define omote_Cover_height_tag                   2
 #define omote_Cover_art_tag                      3
 #define omote_Cover_url_tag                      4
+#define omote_Cover_blurhash_tag                 5
 #define omote_Metadata_title_tag                 1
 #define omote_Metadata_subtitle_tag              2
 #define omote_Metadata_caption_tag               3
@@ -634,7 +638,8 @@ X(a, STATIC,   SINGULAR, STRING,   device_id,         3)
 X(a, STATIC,   SINGULAR, UINT32,   width,             1) \
 X(a, STATIC,   SINGULAR, UINT32,   height,            2) \
 X(a, STATIC,   SINGULAR, UENUM,    art,               3) \
-X(a, STATIC,   SINGULAR, STRING,   url,               4)
+X(a, STATIC,   SINGULAR, STRING,   url,               4) \
+X(a, STATIC,   SINGULAR, STRING,   blurhash,          5)
 #define omote_Cover_CALLBACK NULL
 #define omote_Cover_DEFAULT NULL
 
@@ -779,21 +784,21 @@ extern const pb_msgdesc_t omote_CommandResult_msg;
 /* Maximum encoded size of messages (where known) */
 #define OMOTE_REMOTE_MESSAGES_PB_H_MAX_SIZE      omote_CommandResult_size
 #define omote_Ack_size                           0
-#define omote_CommandResult_size                 3512
-#define omote_Cover_size                         144
+#define omote_CommandResult_size                 3840
+#define omote_Cover_size                         185
 #define omote_DeviceInfo_size                    129
 #define omote_DeviceList_size                    1058
-#define omote_DeviceState_size                   432
+#define omote_DeviceState_size                   473
 #define omote_Error_size                         165
 #define omote_InputSelectRequest_size            33
-#define omote_MediaPlayerState_size              385
-#define omote_Metadata_size                      382
+#define omote_MediaPlayerState_size              426
+#define omote_Metadata_size                      423
 #define omote_PairingStatus_size                 238
 #define omote_Power_size                         2
 #define omote_RemoteEvent_size                   188
 #define omote_SleepTimerRequest_size             6
 #define omote_SleepTimerStatus_size              8
-#define omote_StateSync_size                     3507
+#define omote_StateSync_size                     3835
 #define omote_Time_size                          15
 #define omote_Volume_size                        7
 

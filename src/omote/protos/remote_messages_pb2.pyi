@@ -607,12 +607,17 @@ class Cover(_message.Message):
     HEIGHT_FIELD_NUMBER: _builtins.int
     ART_FIELD_NUMBER: _builtins.int
     URL_FIELD_NUMBER: _builtins.int
+    BLURHASH_FIELD_NUMBER: _builtins.int
     width: _builtins.int
     height: _builtins.int
     art: Global___CoverArt.ValueType
     url: _builtins.str
     """Set only when art is READY. A plain HTTP GET returns width * height RGB565
     pixels, little-endian, row by row: an LVGL true-color image with no header.
+    """
+    blurhash: _builtins.str
+    """Set only when art is READY: a BlurHash of the art, drawn at the cover size
+    while the OMOTE fetches url. At most 4 x 4 components.
     """
     def __init__(
         self,
@@ -621,10 +626,11 @@ class Cover(_message.Message):
         height: _builtins.int = ...,
         art: Global___CoverArt.ValueType = ...,
         url: _builtins.str = ...,
+        blurhash: _builtins.str = ...,
     ) -> None: ...
     _HasFieldArgType: _TypeAlias = _Never  # noqa: Y015
     def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
-    _ClearFieldArgType: _TypeAlias = _typing.Literal["art", b"art", "height", b"height", "url", b"url", "width", b"width"]  # noqa: Y015
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["art", b"art", "blurhash", b"blurhash", "height", b"height", "url", b"url", "width", b"width"]  # noqa: Y015
     def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
     def WhichOneof(self, oneof_group: _Never) -> None: ...
 
