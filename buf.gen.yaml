@@ -1,7 +1,7 @@
 version: v2
 plugins:
   # Python gencode version must not exceed the hub's protobuf runtime (uv.lock).
-  - remote: buf.build/protocolbuffers/python:v35.1
+  - remote: buf.build/protocolbuffers/python:v36.2
     out: src/omote/protos
   - remote: buf.build/community/nipunn1313-mypy:v5.1.0
     out: src/omote/protos
